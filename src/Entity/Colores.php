@@ -6,7 +6,7 @@ use App\Repository\ColoresRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ColoresRepository::class)]
-#[ORM\Table(name: 'colores',schema: 'streetrats')]
+#[ORM\Table(name: 'color',schema: 'streetrats')]
 class Colores
 {
     #[ORM\Id]
@@ -16,6 +16,10 @@ class Colores
 
     #[ORM\Column(length: 255)]
     private ?string $descripcion = null;
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
     public function getDescripcion(): ?string
     {

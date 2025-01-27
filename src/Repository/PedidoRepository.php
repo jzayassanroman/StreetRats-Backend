@@ -15,6 +15,17 @@ class PedidoRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Pedido::class);
     }
+    public function save(Pedido $pedido): void
+    {
+        $this->_em->persist($pedido);
+        $this->_em->flush();
+    }
+
+    public function delete(Pedido $pedido): void
+    {
+        $this->_em->remove($pedido);
+        $this->_em->flush();
+    }
 
 //    /**
 //     * @return Pedido[] Returns an array of Pedido objects

@@ -6,8 +6,9 @@ enum Tipo : string
 {
     case CAMISETA = 'Camiseta';
     case SUDADERA = 'Sudadera';
-    case PANTALONES = 'Panatalones';
+    case PANTALONES = 'Pantalones';
     case ZAPATOS = 'Zapatos';
     case CAMISA = 'Camisa';
     case ACCESORIOS = 'Accesorios';
+
 }

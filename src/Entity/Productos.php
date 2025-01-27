@@ -8,7 +8,7 @@ use App\Repository\ProductosRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ProductosRepository::class)]
-#[ORM\Table(name: 'productos',schema: 'streetrats')]
+#[ORM\Table(name: 'producto',schema: 'streetrats')]
 class Productos
 {
     #[ORM\Id]
@@ -29,18 +29,18 @@ class Productos
     private ?float $precio = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $img = null;
+    private ?string $imagen = null;
 
     #[ORM\Column(enumType: Sexo::class)]
     private ?Sexo $sexo = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name:'id_talla',nullable: false)]
-    private ?tallas $id_talla = null;
+    private ?Tallas $id_talla = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name:'id_color',nullable: false)]
-    private ?colores $id_color = null;
+    private ?Colores $id_color = null;
 
     public function getId(): ?int
     {
@@ -95,14 +95,14 @@ class Productos
         return $this;
     }
 
-    public function getImg(): ?string
+    public function getImagen(): ?string  // Cambia 'getImg' a 'getImagen'
     {
-        return $this->img;
+        return $this->imagen;
     }
 
-    public function setImg(string $img): static
+    public function setImagen(string $imagen): static  // Cambia 'setImg' a 'setImagen'
     {
-        $this->img = $img;
+        $this->imagen = $imagen;
 
         return $this;
     }

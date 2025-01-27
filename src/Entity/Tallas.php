@@ -6,7 +6,7 @@ use App\Repository\TallasRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: TallasRepository::class)]
-#[ORM\Table(name: 'tallas',schema: 'streetrats')]
+#[ORM\Table(name: 'talla',schema: 'streetrats')]
 class Tallas
 {
     #[ORM\Id]
@@ -16,6 +16,10 @@ class Tallas
 
     #[ORM\Column(length: 255)]
     private ?string $descripcion = null;
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
     public function getDescripcion(): ?string
     {
