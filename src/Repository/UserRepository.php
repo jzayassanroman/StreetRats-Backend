@@ -24,8 +24,8 @@ class UserRepository extends ServiceEntityRepository
 
         $user = new User();
         $user->setUsername($data->getUsername());
-        $user->setPassword($data->getPassword()); // Make sure to hash the password
-        $user->setRol(Rol::USER); // Set default role to USER
+        $user->setPassword($data->getPassword());
+        $user->setRol(Rol::USER);
 
         $entityManager->persist($user);
         $entityManager->flush();
