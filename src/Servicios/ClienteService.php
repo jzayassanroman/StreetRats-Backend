@@ -1,23 +1,14 @@
 <?php
 
 namespace App\Servicios;
-
-use App\Dto\CrearCuentaDto;
 use App\Entity\Cliente;
 use App\Repository\ClienteRepository;
-use App\Repository\UserRepository;
 
-class ClienteService
-{
+class ClienteService{
     private ClienteRepository $clienteRepository;
-    private UserRepository $userRepository;
-
-    public function __construct(ClienteRepository $clienteRepository, UserRepository $userRepository)
-    {
+    public function __construct(ClienteRepository $clienteRepository){
         $this->clienteRepository = $clienteRepository;
-        $this->userRepository = $userRepository;
     }
-
     /**
      * Obtener todos los clientes
      *
@@ -25,29 +16,28 @@ class ClienteService
      */
     public function findAll(): array
     {
-        return Cliente::all()->toArray();
+        // Llamamos al método findAllClientes del repositorio
+        return $this->clienteRepository->findAllClientes();
     }
-
-    /**
-     * Crear un cliente
-     *
-     * @param CrearCuentaDto $data
-     * @return Cliente
-     */
-    public function createCliente(CrearCuentaDto $data): Cliente
+    public function createCliente(array $data)
+{
+    return $this->clienteRepository->create($data);
+}
+    public function updateCliente(int $id, array $data): ?Cliente
     {
-        // Traducir id_user a un entity User
-        $user = $this->userRepository->find($data->getIdUsuario());
-
-        $clienteData = [
-            'nombre' => $data->getNombre(),
-            'apellido' => $data->getApellido(),
-            'email' => $data->getEmail(),
-            'telefono' => $data->getTelefono(),
-            'direccion' => $data->getDireccion(),
-            'user' => $user,
-        ];
-
-        return $this->clienteRepository->create($clienteData);
+        try {
+            return $this->clienteRepository->updateCliente($id, $data); // Llamar al repositorio para actualizar
+        } catch (\Exception $e) {
+            throw new \Exception("No se pudo actualizar el cliente: " . $e->getMessage());
+        }
     }
+    public function deleteCliente(int $id): void
+    {
+        try {
+            $this->clienteRepository->removeCliente($id); // Llamar al repositorio para eliminar
+        } catch (\Exception $e) {
+            throw new \Exception("No se pudo eliminar el cliente: " . $e->getMessage());
+        }
+    }
+
 }

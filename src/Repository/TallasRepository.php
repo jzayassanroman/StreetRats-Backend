@@ -15,6 +15,30 @@ class TallasRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Tallas::class);
     }
+    /**
+     * Método para obtener todas las tallas
+     *
+     * @return Tallas[]
+     */
+    public function findAllTallas(): array
+    {
+        return $this->createQueryBuilder('t')
+            ->getQuery()
+            ->getArrayResult();
+    }
+    public function create(string $descripcion): Tallas
+    {
+        $entityManager = $this->getEntityManager();
+
+        $talla = new Tallas();
+        $talla->setDescripcion($descripcion);
+
+        $entityManager->persist($talla);
+        $entityManager->flush();
+
+        return $talla;
+    }
+
 
 //    /**
 //     * @return Tallas[] Returns an array of Tallas objects

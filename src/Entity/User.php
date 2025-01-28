@@ -10,6 +10,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'usuario',schema: 'streetrats')]
+class User
+#[ORM\Table(name: 'usuario',schema: 'streetrats')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]

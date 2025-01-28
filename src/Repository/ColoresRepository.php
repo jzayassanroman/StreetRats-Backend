@@ -15,6 +15,19 @@ class ColoresRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Colores::class);
     }
+    public function findAllColores(): array
+    {
+        return $this->createQueryBuilder('co')
+            ->getQuery()
+            ->getArrayResult();
+    }
+
+    public function save(Colores $color): void
+    {
+        $entityManager = $this->getEntityManager();
+        $entityManager->persist($color);
+        $entityManager->flush();
+    }
 
 //    /**
 //     * @return Colores[] Returns an array of Colores objects

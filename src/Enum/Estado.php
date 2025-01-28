@@ -6,5 +6,5 @@ enum Estado:string
 {
     case ENTREGADO = 'Entregado';
     case CANCELADO = 'Cancelado';
-    case EN_CURSO = 'En_curso';
+    case EN_CURSO = 'En curso';
 }

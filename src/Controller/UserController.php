@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Controller;
+use App\Repository\UserRepository;
 
 use App\Dto\CrearUsuarioDto;
 use App\Entity\User;
@@ -16,6 +17,7 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/usuarios')]
 class UserController extends AbstractController
 {
+    private $userRepository;
     private UserService $userService;
 
     public function __construct(UserService $userService)
@@ -43,10 +45,12 @@ class UserController extends AbstractController
 //        }
 //    }
 
+    public function __construct(UserRepository $userRepository)
     #[Route('/api/registro', name: 'user_registro', methods: ['POST'])]
     public function registro(Request $request, UserPasswordHasherInterface $userPasswordHasher,
                              EntityManagerInterface $entityManager): JsonResponse
     {
+        $this->userRepository = $userRepository;
         $body = json_decode($request->getContent(), true);
 
 //        if (!isset($body['username']) || !isset($body['password'])) {
