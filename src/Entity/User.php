@@ -5,23 +5,25 @@ namespace App\Entity;
 use App\Enum\Rol;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'usuario',schema: 'streetrats')]
-class User
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column (name: 'id')]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(name: 'username', length: 255)]
     private ?string $username = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(name: 'password', length: 600)]
     private ?string $password = null;
 
-    #[ORM\Column(enumType: Rol::class)]
+    #[ORM\Column(name: 'rol', enumType: Rol::class)]
     private ?Rol $rol = null;
 
     public function getId(): ?int
@@ -53,9 +55,9 @@ class User
         return $this;
     }
 
-    public function getRol(): ?Rol
+    public function getRol(): array
     {
-        return $this->rol;
+        return  $this->rol;
     }
 
     public function setRol(Rol $rol): static
@@ -63,5 +65,20 @@ class User
         $this->rol = $rol;
 
         return $this;
+    }
+
+    public function getRoles(): array
+    {
+        return [$this->rol->value];
+    }
+
+    public function eraseCredentials(): void
+    {
+        // TODO: Implement eraseCredentials() method.
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->username;
     }
 }
