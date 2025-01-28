@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Repository\ColoresRepository;
 use App\Servicios\ColoresService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -37,6 +38,20 @@ class ColoresController extends AbstractController
         $color = $this->coloresService->create($descripcion);
 
         return new JsonResponse(['id' => $color->getId(), 'descripcion' => $color->getDescripcion()], JsonResponse::HTTP_CREATED);
+    }
+    #[Route('/find/{id}', name: 'colores_find_by_id', methods: ['GET'])]
+    public function findById(int $id, ColoresRepository $coloresRepository): JsonResponse
+    {
+        $color = $coloresRepository->find($id);
+
+        if (!$color) {
+            return $this->json(['error' => 'Color no encontrado'], 404);
+        }
+
+        return $this->json([
+            'id' => $color->getId(),
+            'descripcion' => $color->getDescripcion(),
+        ]);
     }
 
 }

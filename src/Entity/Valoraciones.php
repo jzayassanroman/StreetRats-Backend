@@ -15,33 +15,33 @@ class Valoraciones
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $opinion = null;
+    #[ORM\Column(length: 300)]
+    private ?string $valoracion = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTimeInterface $fecha = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name:'id_producto',nullable: false)]
-    private ?productos $id_producto = null;
+    private ?Productos $id_producto = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name:'id_cliente',nullable: false)]
-    private ?cliente $id_cliente = null;
+    private ?Cliente $id_cliente = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getOpinion(): ?string
+    public function getValoracion(): ?string
     {
-        return $this->opinion;
+        return $this->valoracion;
     }
 
-    public function setOpinion(string $opinion): static
+    public function setValoracion(string $valoracion): static
     {
-        $this->opinion = $opinion;
+        $this->valoracion = $valoracion;
 
         return $this;
     }

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Controller;
+use App\Repository\TallasRepository;
 use App\Servicios\TallasService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -39,6 +40,20 @@ class TallasController extends AbstractController
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
+    }
+    #[Route('/find/{id}', name: 'talla_find_by_id', methods: ['GET'])]
+    public function findById(int $id, TallasRepository $tallaRepository): JsonResponse
+    {
+        $talla = $tallaRepository->find($id);
+
+        if (!$talla) {
+            return $this->json(['error' => 'Talla no encontrada'], 404);
+        }
+
+        return $this->json([
+            'id' => $talla->getId(),
+            'descripcion' => $talla->getDescripcion(),
+        ]);
     }
 
 }

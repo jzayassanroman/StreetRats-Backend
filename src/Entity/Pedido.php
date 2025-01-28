@@ -27,11 +27,11 @@ class Pedido
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name:'id_producto',nullable: false)]
-    private ?productos $id_producto = null;
+    private ?Productos $id_producto = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name:'id_cliente',nullable: false)]
-    private ?cliente $id_cliente = null;
+    private ?Cliente $id_cliente = null;
 
     public function getId(): ?int
     {
@@ -74,24 +74,24 @@ class Pedido
         return $this;
     }
 
-    public function getIdProducto(): ?productos
+    public function getIdProducto(): ?Productos
     {
         return $this->id_producto;
     }
 
-    public function setIdProducto(?productos $id_producto): static
+    public function setIdProducto(?Productos $id_producto): static
     {
         $this->id_producto = $id_producto;
 
         return $this;
     }
 
-    public function getIdCliente(): ?cliente
+    public function getIdCliente(): ?Cliente
     {
         return $this->id_cliente;
     }
 
-    public function setIdCliente(?cliente $id_cliente): static
+    public function setIdCliente(?Cliente $id_cliente): static
     {
         $this->id_cliente = $id_cliente;
 

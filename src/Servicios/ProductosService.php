@@ -160,5 +160,25 @@ class ProductosService
 
         $this->productosRepository->eliminarProducto($producto);
     }
+    public function obtenerProductoPorId(int $id): ?array
+    {
+        $producto = $this->productosRepository->findById($id);
+
+        if (!$producto) {
+            return null; // Producto no encontrado
+        }
+
+        return [
+            'id' => $producto->getId(),
+            'nombre' => $producto->getNombre(),
+            'descripcion' => $producto->getDescripcion(),
+            'tipo' => $producto->getTipo(),
+            'precio' => $producto->getPrecio(),
+            'imagen' => $producto->getImagen(),
+            'sexo' => $producto->getSexo(),
+            'talla' => $producto->getIdTalla()?->getDescripcion(), // Si tienes el método getNombre() en Tallas
+            'color' => $producto->getIdColor()?->getDescripcion()  // Si tienes el método getNombre() en Colores
+        ];
+    }
 
 }

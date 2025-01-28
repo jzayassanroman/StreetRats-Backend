@@ -44,6 +44,16 @@ class PedidoService
 
         return $pedido;
     }
+    public function editarPedido(int $id, array $data): Pedido
+    {
+        $pedido = $this->pedidoRepository->find($id);
+
+        if (!$pedido) {
+            throw new \Exception('El pedido no existe.');
+        }
+
+        return $this->pedidoRepository->editarPedido($pedido, $data);
+    }
 
     public function eliminarPedido(int $id): void
     {

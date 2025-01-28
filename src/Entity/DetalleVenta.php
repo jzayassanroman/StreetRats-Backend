@@ -6,7 +6,7 @@ use App\Repository\DetalleVentaRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: DetalleVentaRepository::class)]
-#[ORM\Table(name: 'detalle_venta',schema: 'streetrats')]
+#[ORM\Table(name: 'detalle_venta', schema: 'streetrats')]
 class DetalleVenta
 {
     #[ORM\Id]
@@ -21,12 +21,12 @@ class DetalleVenta
     private ?float $subtotal = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name:'id_pedido',nullable: false)]
-    private ?pedido $id_pedido = null;
+    #[ORM\JoinColumn(name: 'id_pedido', nullable: false)]
+    private ?Pedido $pedido = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name:'id_producto',nullable: false)]
-    private ?productos $id_producto = null;
+    #[ORM\JoinColumn(name: 'id_producto', nullable: false)]
+    private ?Productos $producto = null;
 
     public function getId(): ?int
     {
@@ -42,6 +42,11 @@ class DetalleVenta
     {
         $this->cantidad = $cantidad;
 
+        // Si el producto está asignado, recalcular el subtotal automáticamente
+        if ($this->producto !== null) {
+            $this->setSubtotal($this->producto->getPrecio() * $cantidad);
+        }
+
         return $this;
     }
 
@@ -50,33 +55,38 @@ class DetalleVenta
         return $this->subtotal;
     }
 
-    public function setSubtotal(float $subtotal): static
+    private function setSubtotal(float $subtotal): static
     {
         $this->subtotal = $subtotal;
 
         return $this;
     }
 
-    public function getIdPedido(): ?pedido
+    public function getPedido(): ?Pedido
     {
-        return $this->id_pedido;
+        return $this->pedido;
     }
 
-    public function setIdPedido(?pedido $id_pedido): static
+    public function setPedido(?Pedido $pedido): static
     {
-        $this->id_pedido = $id_pedido;
+        $this->pedido = $pedido;
 
         return $this;
     }
 
-    public function getIdProducto(): ?productos
+    public function getProducto(): ?Productos
     {
-        return $this->id_producto;
+        return $this->producto;
     }
 
-    public function setIdProducto(?productos $id_producto): static
+    public function setProducto(?Productos $producto): static
     {
-        $this->id_producto = $id_producto;
+        $this->producto = $producto;
+
+        // Si la cantidad está asignada, recalcular el subtotal automáticamente
+        if ($this->cantidad !== null) {
+            $this->setSubtotal($producto->getPrecio() * $this->cantidad);
+        }
 
         return $this;
     }

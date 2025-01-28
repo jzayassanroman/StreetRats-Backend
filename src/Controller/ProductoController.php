@@ -16,10 +16,12 @@ use App\Enum\Sexo;
 class ProductoController extends AbstractController
 {
     private ProductosService $productosService;
+    private ProductosRepository $productosRepository;
 
-    public function __construct(ProductosService $productosService)
+    public function __construct(ProductosService $productosService, ProductosRepository $productosRepository)
     {
         $this->productosService = $productosService;
+        $this->productosRepository = $productosRepository;
     }
     #[Route('/all', name: 'productos_all')]
     public function index(): JsonResponse
@@ -128,6 +130,18 @@ class ProductoController extends AbstractController
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
+    #[Route('/find/{id}', name: 'producto_por_id', methods: ['GET'])]
+    public function productoPorId(int $id): JsonResponse
+    {
+        $producto = $this->productosService->obtenerProductoPorId($id);
+
+        if (!$producto) {
+            return new JsonResponse(['error' => 'Producto no encontrado'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        return new JsonResponse($producto, JsonResponse::HTTP_OK);
+    }
+
 
 
 }

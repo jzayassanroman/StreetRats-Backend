@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Controller;
+use App\Repository\ClienteRepository;
 use App\Servicios\ClienteService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -82,6 +83,23 @@ class ClienteController extends AbstractController
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
+    }
+    #[Route('/find/{id}', name: 'cliente_find_by_id', methods: ['GET'])]
+    public function findById(int $id, ClienteRepository $clienteRepository): JsonResponse
+    {
+        $cliente = $clienteRepository->find($id);
+
+        if (!$cliente) {
+            return $this->json(['error' => 'Cliente no encontrado'], 404);
+        }
+
+        return $this->json([
+            'id' => $cliente->getId(),
+            'nombre' => $cliente->getNombre(),
+            'apellido' => $cliente->getApellido(),
+            'email' => $cliente->getEmail(),
+            'telefono' => $cliente->getTelefono(),
+        ]);
     }
 
 }

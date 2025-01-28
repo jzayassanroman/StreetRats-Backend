@@ -110,6 +110,24 @@ class ProductosRepository extends ServiceEntityRepository
         $this->getEntityManager()->remove($producto);
         $this->getEntityManager()->flush();
     }
+    /**
+     * Encuentra un producto por su ID
+     *
+     * @param int $id
+     * @return Productos|null
+     */
+    public function findById(int $id): ?Productos
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.id_talla', 't')
+            ->addSelect('t')
+            ->leftJoin('p.id_color', 'c')
+            ->addSelect('c')
+            ->where('p.id = :id')
+            ->setParameter('id', $id);
+
+        return $qb->getQuery()->getOneOrNullResult();
+    }
 
 //    /**
 //     * @return Productos[] Returns an array of Productos objects
