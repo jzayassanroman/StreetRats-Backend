@@ -27,14 +27,16 @@ class ValoracionesController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         // Validar que los campos necesarios estén presentes
-        if (empty($data['valoracion']) || empty($data['id_producto']) || empty($data['id_cliente'])) {
+        if (empty($data['valoracion']) || empty($data['id_producto']) || empty($data['id_cliente']) || !isset($data['estrellas'])) {
             return new Response('Faltan campos necesarios.', Response::HTTP_BAD_REQUEST);
         }
 
         try {
             // Crear la valoración
-            $this->valoracionService->crearValoracion($data['valoracion'], $data['id_producto'], $data['id_cliente']);
+            $this->valoracionService->crearValoracion($data['valoracion'], (int) $data['estrellas'], $data['id_producto'], $data['id_cliente']);
             return new Response('Valoración creada correctamente.', Response::HTTP_CREATED);
+        } catch (\RuntimeException $e) {
+            return new Response('Error: ' . $e->getMessage(), Response::HTTP_CONFLICT);
         } catch (\Exception $e) {
             return new Response('Error: ' . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }

@@ -20,9 +20,10 @@ class UserController extends AbstractController
     private $userRepository;
     private UserService $userService;
 
-    public function __construct(UserService $userService)
+    public function __construct(UserService $userService, UserRepository $userRepository)
     {
         $this->userService = $userService;
+        $this->userRepository = $userRepository;
     }
 
 //    #[Route('/crear', name: 'user_create', methods: ['POST'])]
@@ -45,12 +46,10 @@ class UserController extends AbstractController
 //        }
 //    }
 
-    public function __construct(UserRepository $userRepository)
     #[Route('/api/registro', name: 'user_registro', methods: ['POST'])]
     public function registro(Request $request, UserPasswordHasherInterface $userPasswordHasher,
                              EntityManagerInterface $entityManager): JsonResponse
     {
-        $this->userRepository = $userRepository;
         $body = json_decode($request->getContent(), true);
 
 //        if (!isset($body['username']) || !isset($body['password'])) {

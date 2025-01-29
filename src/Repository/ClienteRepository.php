@@ -28,53 +28,49 @@ class ClienteRepository extends ServiceEntityRepository
             ->getArrayResult();
     }
 
+    /**
+     * Método personalizado para obtener un cliente por ID
+     *
+     * @param int $id ID del cliente
+     * @return Cliente|null Retorna el cliente si existe, de lo contrario retorna NULL
+     */
     public function create(array $data): Cliente
     {
         $entityManager = $this->getEntityManager();
 
-        $cliente = new Cliente();
-        $cliente->setNombre($data['nombre']);
-        $cliente->setApellido($data['apellido']);
-        $cliente->setEmail($data['email']);
-        $cliente->setTelefono($data['telefono']);
-        $cliente->setDireccion($data['direccion']);
-
-        // Verifica y establece el usuario si se proporciona
-        if (isset($data['id_user'])) {
-            $user = $entityManager->getRepository(User::class)->find($data['id_user']);
-            if (!$user) {
-                throw new \Exception('El usuario especificado no existe.');
-            }
-            $cliente->setIdUser($user);
+        // Verificar que los datos requeridos estén en la solicitud
+        if (!isset($data['nombre'], $data['apellido'], $data['email'], $data['telefono'], $data['direccion'], $data['id_usuario'])) {
+            throw new \Exception("Faltan campos obligatorios en la solicitud.");
         }
-    public function create(array $data): Cliente
-    {
-        $entityManager = $this->getEntityManager();
 
+        // Buscar el usuario en la base de datos con el ID proporcionado
+        $user = $entityManager->getRepository(User::class)->find($data['id_usuario']);
+        if (!$user) {
+            throw new \Exception("El usuario con ID {$data['id_usuario']} no existe.");
+        }
+
+        // Crear y asignar datos al cliente
         $cliente = new Cliente();
         $cliente->setNombre($data['nombre']);
         $cliente->setApellido($data['apellido']);
         $cliente->setEmail($data['email']);
         $cliente->setTelefono($data['telefono']);
         $cliente->setDireccion($data['direccion']);
-        $cliente->setIdUser($data['user']);
+        $cliente->setIdUser($user); // Asignar objeto User en lugar de ID
 
+        // Guardar en la base de datos
         $entityManager->persist($cliente);
         $entityManager->flush();
 
         return $cliente;
     }
+
     public function updateCliente(int $id, array $data): ?Cliente
     {
         $entityManager = $this->getEntityManager();
         $cliente = $this->find($id); // Buscar cliente por ID
         $entityManager->persist($cliente);
         $entityManager->flush();
-
-        return $cliente;
-    }
-
-
 
         if (!$cliente) {
             throw new \Exception("Cliente no encontrado.");

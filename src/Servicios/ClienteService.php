@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Servicios;
+use App\Dto\CrearCuentaDto;
 use App\Entity\Cliente;
 use App\Repository\ClienteRepository;
 
@@ -19,10 +20,19 @@ class ClienteService{
         // Llamamos al método findAllClientes del repositorio
         return $this->clienteRepository->findAllClientes();
     }
-    public function createCliente(array $data)
-{
-    return $this->clienteRepository->create($data);
-}
+    public function createCliente(CrearCuentaDto $dto): Cliente
+    {
+        $data = [
+            'nombre' => $dto->getNombre(),
+            'apellido' => $dto->getApellido(),
+            'email' => $dto->getEmail(),
+            'telefono' => $dto->getTelefono(),
+            'direccion' => $dto->getDireccion(),
+            'id_usuario' => $dto->getIdUsuario(),
+        ];
+
+        return $this->clienteRepository->create($data);
+    }
     public function updateCliente(int $id, array $data): ?Cliente
     {
         try {

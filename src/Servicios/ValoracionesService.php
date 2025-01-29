@@ -17,8 +17,13 @@ class ValoracionesService
         $this->entityManager = $entityManager;
     }
 
-    public function crearValoracion(string $valoracion, int $idProducto, int $idCliente): void
+    public function crearValoracion(string $valoracion, int $estrellas, int $idProducto, int $idCliente): void
     {
+        // Validar que las estrellas sean entre 1 y 5
+        if ($estrellas < 1 || $estrellas > 5) {
+            throw new \InvalidArgumentException('La valoración debe estar entre 1 y 5 estrellas.');
+        }
+
         // Buscar el producto y el cliente por sus IDs
         $producto = $this->entityManager->getRepository(Productos::class)->find($idProducto);
         $cliente = $this->entityManager->getRepository(Cliente::class)->find($idCliente);
@@ -32,9 +37,18 @@ class ValoracionesService
             throw new NotFoundHttpException('Cliente no encontrado.');
         }
 
+        // Verificar si el cliente ya ha valorado este producto
+        $valoracionExistente = $this->entityManager->getRepository(Valoraciones::class)
+            ->findOneBy(['id_producto' => $producto, 'id_cliente' => $cliente]);
+
+        if ($valoracionExistente) {
+            throw new \RuntimeException('Ya has valorado este producto anteriormente.');
+        }
+
         // Crear la nueva valoración
         $valoraciones = new Valoraciones();
         $valoraciones->setValoracion($valoracion);
+        $valoraciones->setEstrellas($estrellas);
         $valoraciones->setFecha(new \DateTime()); // Usar la fecha actual
         $valoraciones->setIdProducto($producto);
         $valoraciones->setIdCliente($cliente);

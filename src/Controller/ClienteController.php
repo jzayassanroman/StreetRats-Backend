@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Controller;
+use App\Dto\CrearCuentaDto;
 use App\Repository\ClienteRepository;
 use App\Servicios\ClienteService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -32,11 +33,13 @@ class ClienteController extends AbstractController
     #[Route('/crear', name: 'cliente_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $data = json_decode($request->getContent(), true); // Decodificar el JSON a un array
 
         try {
-            $cliente = $this->clienteService->createCliente($data);
+            // Crear el DTO con los datos
             $crearCuentaDTO = new CrearCuentaDto($data);
+
+            // Llamar al servicio pasando el DTO
             $cliente = $this->clienteService->createCliente($crearCuentaDTO);
 
             return new JsonResponse([

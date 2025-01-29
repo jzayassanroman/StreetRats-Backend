@@ -18,6 +18,9 @@ class Valoraciones
     #[ORM\Column(length: 300)]
     private ?string $valoracion = null;
 
+    #[ORM\Column]
+    private ?int $estrellas = null;
+
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTimeInterface $fecha = null;
 
@@ -43,6 +46,20 @@ class Valoraciones
     {
         $this->valoracion = $valoracion;
 
+        return $this;
+    }
+    public function getEstrellas(): ?int
+    {
+        return $this->estrellas;
+    }
+
+    public function setEstrellas(int $estrellas): static
+    {
+        if ($estrellas < 1 || $estrellas > 5) {
+            throw new \InvalidArgumentException('Las estrellas deben estar entre 1 y 5.');
+        }
+
+        $this->estrellas = $estrellas;
         return $this;
     }
 
