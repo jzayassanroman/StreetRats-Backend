@@ -9,12 +9,12 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: 'usuario',schema: 'streetrats')]
+#[ORM\Table(name: 'usuario', schema: 'streetrats')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column (name: 'id')]
+    #[ORM\Column(name: 'id')]
     private ?int $id = null;
 
     #[ORM\Column(name: 'username', length: 255)]
@@ -25,6 +25,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(name: 'rol', enumType: Rol::class)]
     private ?Rol $rol = null;
+
+    #[ORM\Column(type: 'boolean')]
+    private ?bool $isverified = false;
+
+    #[ORM\Column(name: 'verificationtoken', type: 'string', length: 255, nullable: false)]
+    private ?string $verificationToken = null;
+
+    public function __construct()
+    {
+        $this->verificationToken = bin2hex(random_bytes(16)); // Genera un token aleatorio
+    }
 
     public function getId(): ?int
     {
@@ -57,7 +68,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRol(): array
     {
-        return  $this->rol;
+        return $this->rol;
     }
 
     public function setRol(Rol $rol): static
@@ -80,5 +91,37 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUserIdentifier(): string
     {
         return $this->username;
+    }
+
+    public function isverified(): ?bool
+    {
+        return $this->isverified;
+    }
+
+    public function setVerified(?bool $isverified): static
+    {
+        $this->isverified = $isverified;
+
+        return $this;
+    }
+
+    public function getVerificationToken(): ?string
+    {
+        return $this->verificationToken;
+    }
+
+    public function setVerificationToken(?string $verificationToken): self
+    {
+        $this->verificationToken = $verificationToken;
+        return $this;
+    }
+
+    public function getJWTCustomClaims(): array
+    {
+        return [
+            'id' => $this->getId(),
+            'email' => $this->getEmail(),
+            'isVerified' => $this->isVerified()
+        ];
     }
 }
