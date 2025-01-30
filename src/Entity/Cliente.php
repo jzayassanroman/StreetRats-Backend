@@ -30,7 +30,7 @@ class Cliente
     private ?string $direccion = null;
 
     #[ORM\OneToOne]
-    #[ORM\JoinColumn(name:'id_user',nullable: false)]
+    #[ORM\JoinColumn(name:'id_usuario',nullable: false)]
     private ?User $id_user = null;
 
     public function getId(): ?int
