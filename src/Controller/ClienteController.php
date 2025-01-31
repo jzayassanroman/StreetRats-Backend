@@ -2,11 +2,13 @@
 
 namespace App\Controller;
 
+
 use App\Dto\CrearCuentaDto;
 use App\Entity\Cliente;
 use App\Entity\User;
 use App\Enum\Rol;
 use App\Repository\ClienteRepository;
+use App\Repository\UserRepository;
 use App\Servicios\ClienteService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,6 +18,8 @@ use Symfony\Component\Mailer\MailerInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Ramsey\Uuid\Uuid;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\HttpFoundation\Response;
+
 
 #[Route('/clientes')]
 class ClienteController extends AbstractController
@@ -27,55 +31,38 @@ class ClienteController extends AbstractController
         $this->clienteService = $clienteService;
     }
 
-    private function sendVerificationEmail(Cliente $cliente, MailerInterface $mailer): void
+    private function generateVerificationCode(): string
     {
-        $token = $cliente->getIdUser()->getVerificationToken();
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        return substr(str_shuffle($characters), 0, 5);
+    }
 
-        $htmlContent = '
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Verificación de Cuenta - StreetRats</title>
-            <script src="https://cdn.tailwindcss.com"></script>
-            <style>
-                body { background-color: #000; color: #fff; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-                .container { position: relative; max-width: 500px; padding: 30px; text-align: center; overflow: hidden; border-radius: 10px; background: rgba(255, 255, 255, 0.1); }
-                .logo-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1.2); opacity: 0.1; z-index: 0; width: 100%; }
-                .content { position: relative; z-index: 1; }
-                .title { font-size: 22px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
-                .subtitle { margin-top: 10px; font-size: 14px; color: rgba(255, 255, 255, 0.8); }
-                .button { display: inline-block; margin-top: 20px; padding: 12px 25px; background: #fff; color: #000; font-weight: bold; text-decoration: none; border-radius: 5px; }
-                .footer { margin-top: 20px; font-size: 12px; color: rgba(255, 255, 255, 0.6); }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <!-- Logo en SVG de fondo -->
-                <svg class="logo-bg" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg">
-                    <text x="10" y="35" font-size="40" font-weight="bold" fill="white" opacity="0.1">StreetRats</text>
-                </svg>
+    private function sendVerificationEmail(Cliente $cliente, MailerInterface $mailer, EntityManagerInterface $entityManager): void
+    {
+        $verificationCode = $this->generateVerificationCode();
 
-                <div class="content">
-                    <h2 class="title">¡Bienvenido a StreetRats!</h2>
-                    <p class="subtitle">Verifica tu cuenta haciendo clic en el botón a continuación:</p>
-                    <a href="http://example.com/verify?token='.$token.'" class="button">Verificar Cuenta</a>
-                    <p class="footer">Si no solicitaste este registro, ignora este mensaje.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-    ';
+        $usuario = $cliente->getIdUser();
+        $usuario->setVerificationToken($verificationCode);
+
+        $entityManager->persist($usuario);
+        $entityManager->flush();
 
         $email = (new Email())
-            ->from('noreply@streetrats.com')
-            ->to($cliente->getEmail())
+            ->from('no-reply@streetrats.com')
+            ->to($cliente->getEmail()) // Usar el email de la entidad Cliente
             ->subject('Verificación de Cuenta - StreetRats')
-            ->html($htmlContent);
+            ->html("
+        <html>
+        <body>
+            <h2>¡Bienvenido a StreetRats!</h2>
+            <p>Tu código de verificación es: <strong>$verificationCode</strong></p>
+        </body>
+        </html>
+    ");
 
         $mailer->send($email);
     }
+
 
     #[Route('/todos', name: 'cliente_find_all', methods: ['GET'])]
     public function findAll(): JsonResponse
@@ -90,23 +77,19 @@ class ClienteController extends AbstractController
     }
 
     #[Route('/crear', name: 'cliente_create', methods: ['POST'])]
-    public function create(Request $request, MailerInterface $mailer, EntityManagerInterface $entityManager): JsonResponse
+    public function create(Request $request, MailerInterface $mailer, EntityManagerInterface $entityManager, UserRepository $userRepository): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-
-        if (!isset($data['username']) || !isset($data['password'])) {
-            return new JsonResponse(['error' => 'Faltan datos requeridos'], JsonResponse::HTTP_BAD_REQUEST);
-        }
 
         try {
             $crearCuentaDTO = new CrearCuentaDto($data);
             $cliente = $this->clienteService->createCliente($crearCuentaDTO);
 
             // Obtener usuario asociado al cliente
-            $usuario = new User();
-            $usuario->setUsername($data['username']);
-            $usuario->setPassword($data['password']); // Debería estar hasheado
-            $usuario->setRol(Rol::USER);
+            $usuario = $userRepository->findOneBy(['id' => $data['id_usuario']]);
+            // $usuario->setUsername($data['username']);
+            // $usuario->setPassword($data['password']); // Debería estar hasheado
+            // $usuario->setRol(Rol::USER);
 
             // Generar el token de verificación
             $token = Uuid::uuid4()->toString();
@@ -117,11 +100,12 @@ class ClienteController extends AbstractController
 
             // Asignar el usuario al cliente
             $cliente->setIdUser($usuario);
+            $cliente->setEmail($data['email']); // Asignar el email al cliente
             $entityManager->persist($cliente);
             $entityManager->flush();
 
             // Enviar email de verificación
-            $this->sendVerificationEmail($cliente, $mailer);
+            $this->sendVerificationEmail($cliente, $mailer, $entityManager);
 
             return new JsonResponse([
                 'id' => $cliente->getId(),
@@ -190,4 +174,64 @@ class ClienteController extends AbstractController
             'telefono' => $cliente->getTelefono(),
         ]);
     }
+
+    #[Route('/clientes/enviar-codigo/{id}', methods: ['POST'])]
+    public function enviarCodigoVerificacion(int $id, ClienteRepository $clienteRepository, MailerInterface $mailer, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $cliente = $clienteRepository->find($id);
+
+        if (!$cliente) {
+            return $this->json(['error' => 'Cliente no encontrado'], 404);
+        }
+
+        $this->sendVerificationEmail($cliente, $mailer, $entityManager);
+
+        return $this->json(['message' => 'Código de verificación enviado']);
+    }
+    // src/Controller/ClienteController.php
+
+// ...
+
+    #[Route('/clientes/verificar-codigo', methods: ['POST'])]
+    public function verificarCodigo(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $email = $data['email'] ?? null;
+        $codigo = $data['codigo'] ?? null;
+
+        if (!$email || !$codigo) {
+            return $this->json(['error' => 'Email y código requeridos'], 400);
+        }
+
+        // Buscar en la entidad Cliente en lugar de User
+        $cliente = $entityManager->getRepository(Cliente::class)->findOneBy(['email' => $email]);
+
+        if (!$cliente) {
+            return $this->json(['error' => 'Cliente no encontrado'], 400);
+        }
+
+        $usuario = $cliente->getIdUser();
+
+        if (!$usuario) {
+            return $this->json(['error' => 'El cliente no tiene un usuario asociado'], 400);
+        }
+
+        if ($usuario->getVerificationToken() !== $codigo) {
+            return $this->json(['error' => 'Código de verificación incorrecto'], 400);
+        }
+
+        // Verificar usuario
+        $usuario->setVerified(true);
+        $usuario->setVerificationToken(null);
+
+        $entityManager->persist($usuario);
+        $entityManager->flush();
+
+        return $this->json(['message' => 'Usuario verificado correctamente']);
+    }
+
+// ...
+
+
+
 }

@@ -26,10 +26,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'rol', enumType: Rol::class)]
     private ?Rol $rol = null;
 
-    #[ORM\Column(type: 'boolean')]
-    private ?bool $isverified = false;
+    #[ORM\Column(name: 'isverified', type: 'boolean', nullable: false)]
+    private ?bool $isVerified = false;
 
-    #[ORM\Column(name: 'verificationtoken', type: 'string', length: 255, nullable: false)]
+    #[ORM\Column(name: 'verificationtoken', type: 'string', length: 255, nullable: true)]
     private ?string $verificationToken = null;
 
     public function __construct()
@@ -93,14 +93,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->username;
     }
 
-    public function isverified(): ?bool
+    public function isVerified(): ?bool
     {
-        return $this->isverified;
+        return $this->isVerified;
     }
 
-    public function setVerified(?bool $isverified): static
+    public function setVerified(?bool $verified): self
     {
-        $this->isverified = $isverified;
+        $this->isVerified = $verified;
 
         return $this;
     }
