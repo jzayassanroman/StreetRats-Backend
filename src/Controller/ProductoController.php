@@ -26,11 +26,26 @@ class ProductoController extends AbstractController
     #[Route('/all', name: 'productos_all')]
     public function index(): JsonResponse
     {
-        // Usamos el servicio para obtener los productos
         $productos = $this->productosService->getAllProductos();
 
-        return new JsonResponse($productos);
+        // Convertir la cadena JSON de imagen en un array real
+        $productosArray = array_map(function ($producto) {
+            return [
+                'id' => $producto->getId(),
+                'nombre' => $producto->getNombre(),
+                'descripcion' => $producto->getDescripcion(),
+                'tipo' => $producto->getTipo(),
+                'precio' => $producto->getPrecio(),
+                'imagenes' => json_decode($producto->getImagen(), true), // 🔥 CONVIERTE EL STRING A ARRAY 🔥
+                'sexo' => $producto->getSexo(),
+                'id_talla' => $producto->getIdTalla() ? $producto->getIdTalla()->getId() : null,
+                'id_color' => $producto->getIdColor() ? $producto->getIdColor()->getId() : null,
+            ];
+        }, $productos);
+
+        return new JsonResponse($productosArray);
     }
+
 
 
     #[Route('/crear', name: 'producto_create', methods: ['POST'])]

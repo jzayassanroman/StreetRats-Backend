@@ -25,10 +25,11 @@ class ProductosRepository extends ServiceEntityRepository
     public function findAllProductos(): array
     {
         return $this->createQueryBuilder('p')
-            ->orderBy('p.id', 'ASC') // Ordenamos por ID, puedes cambiarlo si es necesario
+            ->orderBy('p.id', 'ASC')
             ->getQuery()
-            ->getArrayResult();
+            ->getResult(); // ✅ Devuelve un array de objetos Productos
     }
+
     public function save(Productos $producto, bool $flush = false): void
     {
         $this->getEntityManager()->persist($producto);
