@@ -141,6 +141,20 @@ class ProductoController extends AbstractController
 
         return new JsonResponse($producto, JsonResponse::HTTP_OK);
     }
+    #[Route('/tipos', name: 'get_tipos', methods: ['GET'])]
+    public function getTipos(): JsonResponse
+    {
+        $tipos = array_map(fn($tipo) => $tipo->value, Tipo::cases());
+        return new JsonResponse($tipos);
+    }
+    #[Route('/sexos', name: 'sexos_all', methods: ['GET'])]
+    public function getSexos(): JsonResponse
+    {
+        // Obtener los valores del enum Sexo
+        $sexos = array_map(fn($sexo) => $sexo->value, Sexo::cases());
+
+        return new JsonResponse($sexos, JsonResponse::HTTP_OK);
+    }
 
 
 

@@ -25,10 +25,16 @@ class ProductosRepository extends ServiceEntityRepository
     public function findAllProductos(): array
     {
         return $this->createQueryBuilder('p')
-            ->orderBy('p.id', 'ASC') // Ordenamos por ID, puedes cambiarlo si es necesario
+            ->leftJoin('p.id_talla', 't')  // Asegúrate de que 'id_talla' es correcto en la entidad
+            ->addSelect('t')
+            ->leftJoin('p.id_color', 'c')  // Asegúrate de que 'id_color' es correcto en la entidad
+            ->addSelect('c')
+            ->orderBy('p.id', 'ASC')
             ->getQuery()
             ->getArrayResult();
     }
+
+
     public function save(Productos $producto, bool $flush = false): void
     {
         $this->getEntityManager()->persist($producto);

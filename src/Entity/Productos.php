@@ -119,24 +119,24 @@ class Productos
         return $this;
     }
 
-    public function getIdTalla(): ?tallas
+    public function getIdTalla(): ?Tallas
     {
         return $this->id_talla;
     }
 
-    public function setIdTalla(?tallas $id_talla): static
+    public function setIdTalla(?Tallas $id_talla): static
     {
         $this->id_talla = $id_talla;
 
         return $this;
     }
 
-    public function getIdColor(): ?colores
+    public function getIdColor(): ?Colores
     {
         return $this->id_color;
     }
 
-    public function setIdColor(?colores $id_color): static
+    public function setIdColor(?Colores $id_color): static
     {
         $this->id_color = $id_color;
 

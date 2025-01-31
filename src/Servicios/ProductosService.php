@@ -46,6 +46,9 @@ class ProductosService
         $producto = new Productos();
         $producto->setNombre($data['nombre']);
         $producto->setDescripcion($data['descripcion']);
+        $producto->setTipo($this->validateTipo($data['tipo']));
+        $producto->setSexo($this->validateSexo($data['sexo']));
+        $producto->setPrecio($this->validatePrecio($data['precio']));
 
         // Validar y setear el tipo
         try {
@@ -179,6 +182,31 @@ class ProductosService
             'talla' => $producto->getIdTalla()?->getDescripcion(), // Si tienes el método getNombre() en Tallas
             'color' => $producto->getIdColor()?->getDescripcion()  // Si tienes el método getNombre() en Colores
         ];
+    }
+    private function validateTipo(string $tipo): Tipo
+    {
+        try {
+            return Tipo::from($tipo);
+        } catch (\ValueError $e) {
+            throw new \InvalidArgumentException("Tipo de producto inválido.");
+        }
+    }
+
+    private function validateSexo(string $sexo): Sexo
+    {
+        try {
+            return Sexo::from($sexo);
+        } catch (\ValueError $e) {
+            throw new \InvalidArgumentException("Sexo inválido. Los valores permitidos son: Hombre, Mujer, Unisex.");
+        }
+    }
+
+    private function validatePrecio($precio): float
+    {
+        if (!is_numeric($precio) || $precio <= 0) {
+            throw new \InvalidArgumentException("El precio debe ser un número positivo.");
+        }
+        return (float) $precio;
     }
 
 }
