@@ -6,6 +6,7 @@ use App\Dto\CrearCuentaDto;
 use App\Entity\Cliente;
 use App\Entity\User;
 use App\Enum\Rol;
+use App\Repository\ClienteRepository;
 use App\Servicios\ClienteService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -76,13 +77,17 @@ class ClienteController extends AbstractController
         $mailer->send($email);
     }
 
-
     #[Route('/todos', name: 'cliente_find_all', methods: ['GET'])]
     public function findAll(): JsonResponse
     {
         try {
             // Obtener todos los clientes
             $clientes = $this->clienteService->findAll();
+            return new JsonResponse($clientes, JsonResponse::HTTP_OK);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
+        }
+    }
 
     #[Route('/crear', name: 'cliente_create', methods: ['POST'])]
     public function create(Request $request, MailerInterface $mailer, EntityManagerInterface $entityManager): JsonResponse
@@ -132,7 +137,7 @@ class ClienteController extends AbstractController
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
-}
+
     #[Route('/editar/{id}', name: 'cliente_edit', methods: ['PUT'])]
     public function edit(int $id, Request $request): JsonResponse
     {
@@ -167,6 +172,7 @@ class ClienteController extends AbstractController
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
+
     #[Route('/find/{id}', name: 'cliente_find_by_id', methods: ['GET'])]
     public function findById(int $id, ClienteRepository $clienteRepository): JsonResponse
     {
@@ -184,5 +190,4 @@ class ClienteController extends AbstractController
             'telefono' => $cliente->getTelefono(),
         ]);
     }
-
 }
