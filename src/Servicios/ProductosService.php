@@ -7,8 +7,11 @@ use App\Enum\Sexo;
 use App\Repository\ProductosRepository;
 use App\Entity\Productos;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Entity\Tallas;
+use App\Entity\Colores;
+
 
 class ProductosService
 {
@@ -21,6 +24,7 @@ class ProductosService
         $this->entityManager = $entityManager;
         $this->productosRepository = $productosRepository;
     }
+
     public function getAllProductos(): array
     {
         return $this->productosRepository->findAllProductos();
@@ -94,64 +98,61 @@ class ProductosService
     }
 
 
-    public function findProductoById(int $id, array $data): Productos
+    public function actualizarProducto(int $id, array $data): Productos
     {
+        /** @var Productos $producto */
         $producto = $this->productosRepository->find($id);
 
         if (!$producto) {
-            throw new NotFoundHttpException("Producto no encontrado.");
+            throw new \Exception('Producto no encontrado');
         }
 
+        // Verificar y asignar los valores
+        if (isset($data['tipo'])) {
+            $producto->setTipo($this->validateTipo($data['tipo']));
+        }
+        if (isset($data['sexo'])) {
+            $producto->setSexo($this->validateSexo($data['sexo']));
+        }
         if (isset($data['nombre'])) {
             $producto->setNombre($data['nombre']);
         }
-
         if (isset($data['descripcion'])) {
             $producto->setDescripcion($data['descripcion']);
         }
-
-        if (isset($data['tipo'])) {
-            try {
-                $producto->setTipo(Tipo::from($data['tipo']));
-            } catch (\ValueError $e) {
-                throw new \InvalidArgumentException("Tipo de producto inválido.");
-            }
-        }
-
         if (isset($data['precio'])) {
-            $producto->setPrecio($data['precio']);
+            $producto->setPrecio($this->validatePrecio($data['precio']));
         }
-
         if (isset($data['imagen'])) {
             $producto->setImagen($data['imagen']);
         }
 
-        if (isset($data['sexo'])) {
-            try {
-                $producto->setSexo(Sexo::from($data['sexo']));
-            } catch (\ValueError $e) {
-                throw new \InvalidArgumentException("Sexo inválido. Los valores permitidos son: Hombre, Mujer, Unisex.");
-            }
-        }
-
+        // Asignar Talla por id
         if (isset($data['id_talla'])) {
-            $talla = $this->entityManager->getRepository('App\Entity\Tallas')->find($data['id_talla']);
+            $talla = $this->entityManager->getRepository(Tallas::class)->findOneBy(['id' => $data['id_talla']]);
             if ($talla) {
-                $producto->setIdTalla($talla);
+                $producto->setIdTalla($talla);  // Asignar la Talla al producto
             }
         }
 
+        // Asignar Color por id
         if (isset($data['id_color'])) {
-            $color = $this->entityManager->getRepository('App\Entity\Colores')->find($data['id_color']);
+            $color = $this->entityManager->getRepository(Colores::class)->findOneBy(['id' => $data['id_color']]);
             if ($color) {
-                $producto->setIdColor($color);
+                $producto->setIdColor($color);  // Asignar el Color al producto
             }
         }
 
+        // Persistir el producto actualizado
+        $this->entityManager->persist($producto);
         $this->entityManager->flush();
 
         return $producto;
     }
+
+    // $data tiene el id de la talla y del color
+    // convertir ese id a entity (Tall y Color)
+    // y asignarlos al producto
 
     public function eliminarProducto(int $id): void
     {
@@ -161,8 +162,14 @@ class ProductosService
             throw new NotFoundHttpException("Producto no encontrado.");
         }
 
-        $this->productosRepository->eliminarProducto($producto);
+        // Usar el EntityManager inyectado en el constructor
+        $this->entityManager->remove($producto); // Usamos el EntityManager para eliminar el producto
+        $this->entityManager->flush(); // Realizamos el commit de la eliminación
     }
+
+
+
+
     public function obtenerProductoPorId(int $id): ?array
     {
         $producto = $this->productosRepository->findById($id);
@@ -207,6 +214,21 @@ class ProductosService
             throw new \InvalidArgumentException("El precio debe ser un número positivo.");
         }
         return (float) $precio;
+    }
+
+    public function findByTalla(int $idTalla): JsonResponse
+    {
+        $productos = $this->productosRepository->findByTalla($idTalla); // Asegúrate de que el método findByTalla esté en tu repositorio
+        return $this->json($productos);
+    }
+
+    /**
+     * @Route("/api/productos/colores/{idColor}", name="productos_by_color", methods={"GET"})
+     */
+    public function findByColor(int $idColor, ProductosRepository $productoRepository): JsonResponse
+    {
+        $productos = $this->productosRepository->findByColor($idColor); // Asegúrate de que el método findByColor esté en tu repositorio
+        return $this->json($productos);
     }
 
 }

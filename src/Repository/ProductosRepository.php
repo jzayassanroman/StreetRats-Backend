@@ -11,6 +11,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * @extends ServiceEntityRepository<Productos>
@@ -105,17 +106,30 @@ class ProductosRepository extends ServiceEntityRepository
 
         return $producto;
     }
+//    public function eliminarProducto(int $id): void
+//    {
+//        $producto = $this->find($id);
+//
+//        if (!$producto) {
+//            throw new \InvalidArgumentException("No se encontró el producto con ID: {$id}");
+//        }
+//
+//        $this->getEntityManager()->remove($producto);
+//        $this->getEntityManager()->flush();
+//    }
     public function eliminarProducto(int $id): void
     {
-        $producto = $this->find($id);
+        // Buscar el producto en el repositorio por ID
+        $producto = $this->productosRepository->find($id);
 
         if (!$producto) {
-            throw new \InvalidArgumentException("No se encontró el producto con ID: {$id}");
+            throw new NotFoundHttpException("Producto no encontrado.");
         }
 
-        $this->getEntityManager()->remove($producto);
-        $this->getEntityManager()->flush();
+        // Usar el repositorio para eliminar el producto
+        $this->productosRepository->eliminarProducto($producto);
     }
+
     /**
      * Encuentra un producto por su ID
      *
@@ -133,6 +147,27 @@ class ProductosRepository extends ServiceEntityRepository
             ->setParameter('id', $id);
 
         return $qb->getQuery()->getOneOrNullResult();
+    }
+
+    public function findByTalla(int $idTalla)
+    {
+        return $this->createQueryBuilder('p')
+            ->innerJoin('p.talla', 't') // Asumiendo que tienes una relación ManyToOne con Talla
+            ->where('t.id = :idTalla')
+            ->setParameter('idTalla', $idTalla)
+            ->getQuery()
+            ->getResult();
+    }
+
+    // Método para buscar productos por id_color
+    public function findByColor(int $idColor)
+    {
+        return $this->createQueryBuilder('p')
+            ->innerJoin('p.color', 'c') // Asumiendo que tienes una relación ManyToOne con Color
+            ->where('c.id = :idColor')
+            ->setParameter('idColor', $idColor)
+            ->getQuery()
+            ->getResult();
     }
 
 //    /**
