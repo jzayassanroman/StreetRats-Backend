@@ -26,7 +26,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'rol', enumType: Rol::class)]
     private ?Rol $rol = null;
 
-    #[ORM\Column(name: 'isverified', type: 'boolean', nullable: false)]
+    #[ORM\Column(name: 'isverified', type: 'boolean', nullable: true)]
     private ?bool $isVerified = false;
 
     #[ORM\Column(name: 'verificationtoken', type: 'string', length: 255, nullable: true)]

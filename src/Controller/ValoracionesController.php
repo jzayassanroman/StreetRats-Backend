@@ -2,8 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Cliente;
+use App\Entity\Productos;
+use App\Entity\Valoraciones;
 use App\Repository\ValoracionesRepository;
 use App\Servicios\ValoracionesService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -58,5 +62,51 @@ class ValoracionesController extends AbstractController
             'id_cliente' => $valoracion->getIdCliente()?->getId(),
         ]);
     }
+
+    #[Route('/{id_producto}', name: 'get_valoraciones', methods: ['GET'])]
+    public function getValoraciones(int $id_producto, ValoracionesRepository $repository): JsonResponse
+    {
+        $valoraciones = $repository->findBy(['id_producto' => $id_producto]);
+        $data = [];
+
+        foreach ($valoraciones as $val) {
+            $data[] = [
+                'id' => $val->getId(),
+                'valoracion' => $val->getValoracion(),
+                'estrellas' => $val->getEstrellas(),
+                'fecha' => $val->getFecha()->format('Y-m-d')
+            ];
+        }
+
+        return $this->json($data);
+    }
+
+    #[Route('', name: 'post_valoracion', methods: ['POST'])]
+    public function postValoracion(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $valoracion = new Valoraciones();
+        $valoracion->setValoracion($data['valoracion']);
+        $valoracion->setEstrellas($data['estrellas']);
+        $valoracion->setFecha(new \DateTime($data['fecha']));
+
+        // Aquí debes obtener el producto y cliente reales de la BD
+        $producto = $entityManager->getRepository(Productos::class)->find($data['id_producto']);
+        $cliente = $entityManager->getRepository(Cliente::class)->find($data['id_cliente']);
+
+        if (!$producto || !$cliente) {
+            return new JsonResponse(['error' => 'Producto o Cliente no encontrado'], 400);
+        }
+
+        $valoracion->setIdProducto($producto);
+        $valoracion->setIdCliente($cliente);
+
+        $entityManager->persist($valoracion);
+        $entityManager->flush();
+
+        return new JsonResponse(['message' => 'Valoración guardada correctamente'], 201);
+    }
+
 
 }
