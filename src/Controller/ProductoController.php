@@ -10,18 +10,29 @@ use App\Servicios\ProductosService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Enum\Sexo;
 #[Route('/productos')]
 class ProductoController extends AbstractController
 {
     private ProductosService $productosService;
-    private ProductosRepository $productosRepository;
 
-    public function __construct(ProductosService $productosService, ProductosRepository $productosRepository)
+    public function __construct(ProductosService $productosService)
     {
         $this->productosService = $productosService;
-        $this->productosRepository = $productosRepository;
+    }
+    #[Route('/buscar', name: 'buscar_productos', methods: ['GET'])]
+    public function buscar(Request $request, ProductosRepository $productoRepository): JsonResponse
+    {
+        $nombre = $request->query->get('nombre');
+        $tipo = $request->query->get('tipo');
+        $sexo = $request->query->get('sexo');
+        $talla = $request->query->get('talla');
+        $color = $request->query->get('color');
+
+        $productos = $productoRepository->searchAndFilter($nombre, $tipo, $sexo, $talla, $color);
+        return $this->json($productos);
     }
     #[Route('/all', name: 'productos_all')]
     public function index(): JsonResponse
@@ -63,16 +74,16 @@ class ProductoController extends AbstractController
         $precio = $data['precio'] ?? null;
         $imagen = $data['imagen'] ?? null; // Validación de imagen incluida
         $sexoStr = $data['sexo'] ?? null;
-        $idTalla = $data['id_talla'] ?? null;
-        $idColor = $data['id_color'] ?? null;
+        $talla = $data['talla'] ?? null;
+        $color = $data['color'] ?? null;
 
         // Verificar que todos los campos obligatorios están presentes
-        if (!$nombre || !$descripcion || !$tipoStr || !$precio || !$imagen || !$sexoStr || !$idTalla || !$idColor) {
+        if (!$nombre || !$descripcion || !$tipoStr || !$precio || !$imagen || !$sexoStr || !$talla || !$color) {
             return new JsonResponse(['error' => 'Faltan campos obligatorios'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        $talla = $tallasRepository->find($idTalla);
-        $color = $coloresRepository->find($idColor);
+        $talla = $tallasRepository->find($talla);
+        $color = $coloresRepository->find($color);
 
         if (!$talla || !$color) {
             return new JsonResponse(['error' => 'Talla o Color no encontrados'], JsonResponse::HTTP_NOT_FOUND);
@@ -100,8 +111,8 @@ class ProductoController extends AbstractController
         $producto->setPrecio((float)$precio);
         $producto->setImagen($imagen); // Validación aplicada
         $producto->setSexo($sexo);
-        $producto->setIdTalla($talla);
-        $producto->setIdColor($color);
+        $producto->setTalla($talla);
+        $producto->setColor($color);
 
         $productosRepository->save($producto, true);
 
@@ -110,25 +121,22 @@ class ProductoController extends AbstractController
     #[Route('/editar/{id}', name: 'productos_edit', methods: ['PUT'])]
     public function edit(int $id, Request $request): JsonResponse
     {
-        // Obtener los datos del cuerpo de la solicitud
-        $data = json_decode($request->getContent(), true); // El segundo parámetro 'true' convierte el JSON a un array
+        $data = json_decode($request->getContent(), true);
 
         try {
-            // Llamar al servicio para editar el producto
-            $producto = $this->productosService->findProductoById($id, $data);
+            $producto = $this->productosService->actualizarProducto($id, $data);
 
-            // Retornar la respuesta en formato JSON
             return new JsonResponse([
                 'id' => $producto->getId(),
                 'nombre' => $producto->getNombre(),
                 'descripcion' => $producto->getDescripcion(),
-                'tipo' => $producto->getTipo(),
+                'tipo' => $producto->getTipo()->value,
                 'precio' => $producto->getPrecio(),
                 'imagen' => $producto->getImagen(),
-                'sexo' => $producto->getSexo(),
-                'id_talla' => $producto->getIdTalla() ? $producto->getIdTalla()->getId() : null,
-                'id_color' => $producto->getIdColor() ? $producto->getIdColor()->getId() : null,
-            ], JsonResponse::HTTP_OK);
+                'sexo' => $producto->getSexo()->value,
+                'talla' => $producto->getTalla() ? $producto->getTalla()->getId() : null,
+                'color' => $producto->getColor() ? $producto->getColor()->getId() : null,
+            ], Response::HTTP_OK);
 
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
@@ -138,13 +146,21 @@ class ProductoController extends AbstractController
     public function eliminar(int $id): JsonResponse
     {
         try {
+            // Intentar eliminar el producto usando el servicio
             $this->productosService->eliminarProducto($id);
 
+            // Si todo sale bien, devolver un mensaje de éxito
             return new JsonResponse(['mensaje' => 'Producto eliminado con éxito.'], JsonResponse::HTTP_OK);
+        } catch (\NotFoundHttpException $e) {
+            // Si no se encuentra el producto, devolver error 404
+            return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
+            // Si ocurre cualquier otro error, devolver error 400
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
+
+
     #[Route('/find/{id}', name: 'producto_por_id', methods: ['GET'])]
     public function productoPorId(int $id): JsonResponse
     {
@@ -155,6 +171,20 @@ class ProductoController extends AbstractController
         }
 
         return new JsonResponse($producto, JsonResponse::HTTP_OK);
+    }
+    #[Route('/tipos', name: 'get_tipos', methods: ['GET'])]
+    public function getTipos(): JsonResponse
+    {
+        $tipos = array_map(fn($tipo) => $tipo->value, Tipo::cases());
+        return new JsonResponse($tipos);
+    }
+    #[Route('/sexos', name: 'sexos_all', methods: ['GET'])]
+    public function getSexos(): JsonResponse
+    {
+        // Obtener los valores del enum Sexo
+        $sexos = array_map(fn($sexo) => $sexo->value, Sexo::cases());
+
+        return new JsonResponse($sexos, JsonResponse::HTTP_OK);
     }
 
 
