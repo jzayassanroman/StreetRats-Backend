@@ -22,6 +22,18 @@ class ProductoController extends AbstractController
     {
         $this->productosService = $productosService;
     }
+    #[Route('/buscar', name: 'buscar_productos', methods: ['GET'])]
+    public function buscar(Request $request, ProductosRepository $productoRepository): JsonResponse
+    {
+        $nombre = $request->query->get('nombre');
+        $tipo = $request->query->get('tipo');
+        $sexo = $request->query->get('sexo');
+        $talla = $request->query->get('talla');
+        $color = $request->query->get('color');
+
+        $productos = $productoRepository->searchAndFilter($nombre, $tipo, $sexo, $talla, $color);
+        return $this->json($productos);
+    }
     #[Route('/all', name: 'productos_all')]
     public function index(): JsonResponse
     {
@@ -47,16 +59,16 @@ class ProductoController extends AbstractController
         $precio = $data['precio'] ?? null;
         $imagen = $data['imagen'] ?? null; // Validación de imagen incluida
         $sexoStr = $data['sexo'] ?? null;
-        $idTalla = $data['id_talla'] ?? null;
-        $idColor = $data['id_color'] ?? null;
+        $talla = $data['talla'] ?? null;
+        $color = $data['color'] ?? null;
 
         // Verificar que todos los campos obligatorios están presentes
-        if (!$nombre || !$descripcion || !$tipoStr || !$precio || !$imagen || !$sexoStr || !$idTalla || !$idColor) {
+        if (!$nombre || !$descripcion || !$tipoStr || !$precio || !$imagen || !$sexoStr || !$talla || !$color) {
             return new JsonResponse(['error' => 'Faltan campos obligatorios'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        $talla = $tallasRepository->find($idTalla);
-        $color = $coloresRepository->find($idColor);
+        $talla = $tallasRepository->find($talla);
+        $color = $coloresRepository->find($color);
 
         if (!$talla || !$color) {
             return new JsonResponse(['error' => 'Talla o Color no encontrados'], JsonResponse::HTTP_NOT_FOUND);
@@ -84,8 +96,8 @@ class ProductoController extends AbstractController
         $producto->setPrecio((float)$precio);
         $producto->setImagen($imagen); // Validación aplicada
         $producto->setSexo($sexo);
-        $producto->setIdTalla($talla);
-        $producto->setIdColor($color);
+        $producto->setTalla($talla);
+        $producto->setColor($color);
 
         $productosRepository->save($producto, true);
 
@@ -107,8 +119,8 @@ class ProductoController extends AbstractController
                 'precio' => $producto->getPrecio(),
                 'imagen' => $producto->getImagen(),
                 'sexo' => $producto->getSexo()->value,
-                'id_talla' => $producto->getIdTalla() ? $producto->getIdTalla()->getId() : null,
-                'id_color' => $producto->getIdColor() ? $producto->getIdColor()->getId() : null,
+                'talla' => $producto->getTalla() ? $producto->getTalla()->getId() : null,
+                'color' => $producto->getColor() ? $producto->getColor()->getId() : null,
             ], Response::HTTP_OK);
 
         } catch (\Exception $e) {

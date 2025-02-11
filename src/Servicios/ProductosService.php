@@ -82,14 +82,14 @@ class ProductosService
         if (!$talla) {
             throw new \InvalidArgumentException("Talla no encontrada.");
         }
-        $producto->setIdTalla($talla);
+        $producto->setTalla($talla);
 
         // Buscar y setear el color
         $color = $this->entityManager->getRepository('App\Entity\Colores')->find($data['id_color']);
         if (!$color) {
             throw new \InvalidArgumentException("Color no encontrado.");
         }
-        $producto->setIdColor($color);
+        $producto->setColor($color);
 
         // Guardar el producto en el repositorio
         $this->productosRepository->save($producto, true);
@@ -128,18 +128,18 @@ class ProductosService
         }
 
         // Asignar Talla por id
-        if (isset($data['id_talla'])) {
-            $talla = $this->entityManager->getRepository(Tallas::class)->findOneBy(['id' => $data['id_talla']]);
+        if (isset($data['talla'])) {
+            $talla = $this->entityManager->getRepository(Tallas::class)->findOneBy(['id' => $data['talla']]);
             if ($talla) {
-                $producto->setIdTalla($talla);  // Asignar la Talla al producto
+                $producto->setTalla($talla);  // Asignar la Talla al producto
             }
         }
 
         // Asignar Color por id
-        if (isset($data['id_color'])) {
-            $color = $this->entityManager->getRepository(Colores::class)->findOneBy(['id' => $data['id_color']]);
+        if (isset($data['color'])) {
+            $color = $this->entityManager->getRepository(Colores::class)->findOneBy(['id' => $data['color']]);
             if ($color) {
-                $producto->setIdColor($color);  // Asignar el Color al producto
+                $producto->setColor($color);  // Asignar el Color al producto
             }
         }
 
@@ -186,8 +186,8 @@ class ProductosService
             'precio' => $producto->getPrecio(),
             'imagen' => $producto->getImagen(),
             'sexo' => $producto->getSexo(),
-            'talla' => $producto->getIdTalla()?->getDescripcion(), // Si tienes el método getNombre() en Tallas
-            'color' => $producto->getIdColor()?->getDescripcion()  // Si tienes el método getNombre() en Colores
+            'id_talla' => $producto->getTalla()?->getDescripcion(), // Si tienes el método getNombre() en Tallas
+            'id_color' => $producto->getColor()?->getDescripcion()  // Si tienes el método getNombre() en Colores
         ];
     }
     private function validateTipo(string $tipo): Tipo
@@ -216,18 +216,18 @@ class ProductosService
         return (float) $precio;
     }
 
-    public function findByTalla(int $idTalla): JsonResponse
+    public function findByTalla(int $id_talla): JsonResponse
     {
-        $productos = $this->productosRepository->findByTalla($idTalla); // Asegúrate de que el método findByTalla esté en tu repositorio
+        $productos = $this->productosRepository->findByTalla($id_talla); // Asegúrate de que el método findByTalla esté en tu repositorio
         return $this->json($productos);
     }
 
     /**
      * @Route("/api/productos/colores/{idColor}", name="productos_by_color", methods={"GET"})
      */
-    public function findByColor(int $idColor, ProductosRepository $productoRepository): JsonResponse
+    public function findByColor(int $id_color, ProductosRepository $productoRepository): JsonResponse
     {
-        $productos = $this->productosRepository->findByColor($idColor); // Asegúrate de que el método findByColor esté en tu repositorio
+        $productos = $this->productosRepository->findByColor($id_color); // Asegúrate de que el método findByColor esté en tu repositorio
         return $this->json($productos);
     }
 
