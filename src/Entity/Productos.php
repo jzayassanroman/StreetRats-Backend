@@ -36,11 +36,11 @@ class Productos
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name:'id_talla',nullable: false)]
-    private ?Tallas $id_talla = null;
+    private ?Tallas $talla = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name:'id_color',nullable: false)]
-    private ?Colores $id_color = null;
+    private ?Colores $color = null;
 
     public function getId(): ?int
     {
@@ -119,26 +119,26 @@ class Productos
         return $this;
     }
 
-    public function getIdTalla(): ?tallas
+    public function getTalla(): ?tallas
     {
-        return $this->id_talla;
+        return $this->talla;
     }
 
-    public function setIdTalla(?tallas $id_talla): static
+    public function setTalla(?tallas $talla): static
     {
-        $this->id_talla = $id_talla;
+        $this->talla = $talla;
 
         return $this;
     }
 
-    public function getIdColor(): ?colores
+    public function getColor(): ?colores
     {
-        return $this->id_color;
+        return $this->color;
     }
 
-    public function setIdColor(?colores $id_color): static
+    public function setColor(?colores $color): static
     {
-        $this->id_color = $id_color;
+        $this->color = $color;
 
         return $this;
     }

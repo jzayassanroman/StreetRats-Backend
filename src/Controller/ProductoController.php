@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Enum\Sexo;
+
+
 #[Route('/productos')]
 class ProductoController extends AbstractController
 {
@@ -38,8 +40,8 @@ class ProductoController extends AbstractController
                 'precio' => $producto->getPrecio(),
                 'imagenes' => json_decode($producto->getImagen(), true), // 🔥 CONVIERTE EL STRING A ARRAY 🔥
                 'sexo' => $producto->getSexo(),
-                'id_talla' => $producto->getIdTalla() ? $producto->getIdTalla()->getId() : null,
-                'id_color' => $producto->getIdColor() ? $producto->getIdColor()->getId() : null,
+                'talla' => $producto->getIdTalla() ? $producto->getIdTalla()->getId() : null,
+                'color' => $producto->getIdColor() ? $producto->getIdColor()->getId() : null,
             ];
         }, $productos);
 
@@ -63,16 +65,16 @@ class ProductoController extends AbstractController
         $precio = $data['precio'] ?? null;
         $imagen = $data['imagen'] ?? null; // Validación de imagen incluida
         $sexoStr = $data['sexo'] ?? null;
-        $idTalla = $data['id_talla'] ?? null;
-        $idColor = $data['id_color'] ?? null;
+        $Talla = $data['talla'] ?? null;
+        $Color = $data['color'] ?? null;
 
         // Verificar que todos los campos obligatorios están presentes
-        if (!$nombre || !$descripcion || !$tipoStr || !$precio || !$imagen || !$sexoStr || !$idTalla || !$idColor) {
+        if (!$nombre || !$descripcion || !$tipoStr || !$precio || !$imagen || !$sexoStr || !$Talla || !$Color) {
             return new JsonResponse(['error' => 'Faltan campos obligatorios'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        $talla = $tallasRepository->find($idTalla);
-        $color = $coloresRepository->find($idColor);
+        $talla = $tallasRepository->find($Talla);
+        $color = $coloresRepository->find($Color);
 
         if (!$talla || !$color) {
             return new JsonResponse(['error' => 'Talla o Color no encontrados'], JsonResponse::HTTP_NOT_FOUND);
@@ -100,8 +102,8 @@ class ProductoController extends AbstractController
         $producto->setPrecio((float)$precio);
         $producto->setImagen($imagen); // Validación aplicada
         $producto->setSexo($sexo);
-        $producto->setIdTalla($talla);
-        $producto->setIdColor($color);
+        $producto->setTalla($talla);
+        $producto->setColor($color);
 
         $productosRepository->save($producto, true);
 
@@ -126,8 +128,8 @@ class ProductoController extends AbstractController
                 'precio' => $producto->getPrecio(),
                 'imagen' => $producto->getImagen(),
                 'sexo' => $producto->getSexo(),
-                'id_talla' => $producto->getIdTalla() ? $producto->getIdTalla()->getId() : null,
-                'id_color' => $producto->getIdColor() ? $producto->getIdColor()->getId() : null,
+                'talla' => $producto->getTalla() ? $producto->getTalla()->getId() : null,
+                'color' => $producto->getColor() ? $producto->getColor()->getId() : null,
             ], JsonResponse::HTTP_OK);
 
         } catch (\Exception $e) {
@@ -156,6 +158,52 @@ class ProductoController extends AbstractController
 
         return new JsonResponse($producto, JsonResponse::HTTP_OK);
     }
+    #[Route('/tipos', name: 'productos_por_categoria', methods: ['GET'])]
+    public function getProductos(ProductosRepository $productoRepository, Request $request): JsonResponse
+    {
+        $tipo = $request->query->get('tipo');
+
+        if ($tipo !== null) {
+            // Convertir a capitalizado para que coincida con los valores del Enum
+            $tipo = ucfirst(strtolower($tipo));
+
+            // Obtener los valores válidos del Enum
+            $tiposValidos = array_map(fn($tipo) => $tipo->value, Tipo::cases());
+
+            if (!in_array($tipo, $tiposValidos, true)) {
+                return new JsonResponse(['error' => 'Tipo de producto no válido'], 400);
+            }
+
+            // Convertir el string recibido en un objeto Enum
+            $tipoEnum = Tipo::from($tipo);
+
+            // Buscar productos por tipo utilizando el Enum
+            $productos = $productoRepository->findBy(['tipo' => $tipoEnum]);
+        } else {
+            // Si no se proporciona tipo, devolver todos los productos
+            $productos = $productoRepository->findAll();
+        }
+
+        // Convertir los productos a un array para asegurarnos de que se serializan correctamente
+        $productosArray = array_map(function ($producto) {
+            return [
+                'id' => $producto->getId(),
+                'nombre' => $producto->getNombre(),
+                'descripcion' => $producto->getDescripcion(),
+                'tipo' => $producto->getTipo() instanceof Tipo ? $producto->getTipo()->value : null, // Verifica si es Enum
+                'precio' => $producto->getPrecio(),
+                'imagen' => $producto->getImagen(),
+                'sexo' => $producto->getSexo() instanceof Sexo ? $producto->getSexo()->value : null,
+                'talla' => $producto->getTalla() ? $producto->getTalla()->getId() : null,
+                'color' => $producto->getColor() ? $producto->getColor()->getId() : null
+            ];
+        }, $productos);
+
+        return new JsonResponse($productosArray, 200);
+    }
+
+
+
 
 
 

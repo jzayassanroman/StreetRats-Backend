@@ -80,20 +80,20 @@ class ProductosRepository extends ServiceEntityRepository
             $producto->setSexo($sexo);
         }
 
-        if (isset($data['id_talla'])) {
+        if (isset($data['talla'])) {
             $talla = $this->getEntityManager()->getRepository(Tallas::class)->find($data['id_talla']);
             if (!$talla) {
                 throw new \InvalidArgumentException("No se encontró la talla con ID: {$data['id_talla']}");
             }
-            $producto->setIdTalla($talla);
+            $producto->setTalla($talla);
         }
 
-        if (isset($data['id_color'])) {
+        if (isset($data['color'])) {
             $color = $this->getEntityManager()->getRepository(Colores::class)->find($data['id_color']);
             if (!$color) {
                 throw new \InvalidArgumentException("No se encontró el color con ID: {$data['id_color']}");
             }
-            $producto->setIdColor($color);
+            $producto->setColor($color);
         }
 
         $this->getEntityManager()->flush();
@@ -129,6 +129,17 @@ class ProductosRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getOneOrNullResult();
     }
+    public function findByCategoria(Tipo $tipo): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.tipo = :tipo')
+            ->setParameter('tipo', $tipo->value) // Usa el valor del enum, no el objeto
+            ->getQuery()
+            ->getResult();
+    }
+
+
+
 
 //    /**
 //     * @return Productos[] Returns an array of Productos objects

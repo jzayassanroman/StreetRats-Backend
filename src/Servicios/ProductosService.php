@@ -36,8 +36,8 @@ class ProductosService
             empty($data['precio']) ||
             empty($data['imagen']) ||
             empty($data['sexo']) ||
-            empty($data['id_talla']) ||
-            empty($data['id_color'])
+            empty($data['talla']) ||
+            empty($data['color'])
         ) {
             throw new \InvalidArgumentException("Todos los campos son obligatorios.");
         }
@@ -71,18 +71,18 @@ class ProductosService
         }
 
         // Buscar y setear la talla
-        $talla = $this->entityManager->getRepository('App\Entity\Tallas')->find($data['id_talla']);
+        $talla = $this->entityManager->getRepository('App\Entity\Tallas')->find($data['talla']);
         if (!$talla) {
             throw new \InvalidArgumentException("Talla no encontrada.");
         }
-        $producto->setIdTalla($talla);
+        $producto->setTalla($talla);
 
         // Buscar y setear el color
-        $color = $this->entityManager->getRepository('App\Entity\Colores')->find($data['id_color']);
+        $color = $this->entityManager->getRepository('App\Entity\Colores')->find($data['color']);
         if (!$color) {
             throw new \InvalidArgumentException("Color no encontrado.");
         }
-        $producto->setIdColor($color);
+        $producto->setColor($color);
 
         // Guardar el producto en el repositorio
         $this->productosRepository->save($producto, true);
@@ -131,17 +131,17 @@ class ProductosService
             }
         }
 
-        if (isset($data['id_talla'])) {
-            $talla = $this->entityManager->getRepository('App\Entity\Tallas')->find($data['id_talla']);
+        if (isset($data['talla'])) {
+            $talla = $this->entityManager->getRepository('App\Entity\Tallas')->find($data['talla']);
             if ($talla) {
-                $producto->setIdTalla($talla);
+                $producto->setTalla($talla);
             }
         }
 
-        if (isset($data['id_color'])) {
-            $color = $this->entityManager->getRepository('App\Entity\Colores')->find($data['id_color']);
+        if (isset($data['color'])) {
+            $color = $this->entityManager->getRepository('App\Entity\Colores')->find($data['color']);
             if ($color) {
-                $producto->setIdColor($color);
+                $producto->setColor($color);
             }
         }
 
@@ -176,8 +176,8 @@ class ProductosService
             'precio' => $producto->getPrecio(),
             'imagen' => $producto->getImagen(),
             'sexo' => $producto->getSexo(),
-            'talla' => $producto->getIdTalla()?->getDescripcion(), // Si tienes el método getNombre() en Tallas
-            'color' => $producto->getIdColor()?->getDescripcion()  // Si tienes el método getNombre() en Colores
+            'talla' => $producto->getTalla()?->getDescripcion(), // Si tienes el método getNombre() en Tallas
+            'color' => $producto->getColor()?->getDescripcion()  // Si tienes el método getNombre() en Colores
         ];
     }
 
