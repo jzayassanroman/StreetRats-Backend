@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Controller;
+
 use App\Entity\Productos;
 use App\Enum\Tipo;
 use App\Repository\ColoresRepository;
@@ -13,6 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Enum\Sexo;
+
 #[Route('/productos')]
 class ProductoController extends AbstractController
 {
@@ -22,6 +24,7 @@ class ProductoController extends AbstractController
     {
         $this->productosService = $productosService;
     }
+
     #[Route('/buscar', name: 'buscar_productos', methods: ['GET'])]
     public function buscar(Request $request, ProductosRepository $productoRepository): JsonResponse
     {
@@ -34,30 +37,34 @@ class ProductoController extends AbstractController
         $productos = $productoRepository->searchAndFilter($nombre, $tipo, $sexo, $talla, $color);
         return $this->json($productos);
     }
+
     #[Route('/all', name: 'productos_all')]
     public function index(): JsonResponse
     {
         $productos = $this->productosService->getAllProductos();
 
-        // Convertir la cadena JSON de imagen en un array real
-        $productosArray = array_map(function ($producto) {
+        // Ensure $productos is an array of Productos objects
+        $productosArray = array_map(function (Productos $producto) {
             return [
                 'id' => $producto->getId(),
                 'nombre' => $producto->getNombre(),
                 'descripcion' => $producto->getDescripcion(),
                 'tipo' => $producto->getTipo(),
                 'precio' => $producto->getPrecio(),
-                'imagenes' => json_decode($producto->getImagen(), true), // 🔥 CONVIERTE EL STRING A ARRAY 🔥
+                'imagenes' => json_decode($producto->getImagen(), true),
                 'sexo' => $producto->getSexo(),
-                'id_talla' => $producto->getIdTalla() ? $producto->getIdTalla()->getId() : null,
-                'id_color' => $producto->getIdColor() ? $producto->getIdColor()->getId() : null,
-            ];
+                'talla' => $producto->getTalla() ? [
+                    'id' => $producto->getTalla()->getId(),
+                    'descripcion' => $producto->getTalla()->getDescripcion()
+                ] : null,
+                'color' => $producto->getColor() ? [
+                    'id' => $producto->getColor()->getId(),
+                    'descripcion' => $producto->getColor()->getDescripcion()
+                ] : null,            ];
         }, $productos);
 
         return new JsonResponse($productosArray);
     }
-
-
 
     #[Route('/crear', name: 'producto_create', methods: ['POST'])]
     public function crearProducto(
@@ -118,6 +125,7 @@ class ProductoController extends AbstractController
 
         return new JsonResponse(['message' => 'Producto creado exitosamente'], JsonResponse::HTTP_CREATED);
     }
+
     #[Route('/editar/{id}', name: 'productos_edit', methods: ['PUT'])]
     public function edit(int $id, Request $request): JsonResponse
     {
@@ -142,6 +150,7 @@ class ProductoController extends AbstractController
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
+
     #[Route('/eliminar/{id}', name: 'eliminar_producto', methods: ['DELETE'])]
     public function eliminar(int $id): JsonResponse
     {
@@ -160,7 +169,6 @@ class ProductoController extends AbstractController
         }
     }
 
-
     #[Route('/find/{id}', name: 'producto_por_id', methods: ['GET'])]
     public function productoPorId(int $id): JsonResponse
     {
@@ -172,12 +180,14 @@ class ProductoController extends AbstractController
 
         return new JsonResponse($producto, JsonResponse::HTTP_OK);
     }
+
     #[Route('/tipos', name: 'get_tipos', methods: ['GET'])]
     public function getTipos(): JsonResponse
     {
         $tipos = array_map(fn($tipo) => $tipo->value, Tipo::cases());
         return new JsonResponse($tipos);
     }
+
     #[Route('/sexos', name: 'sexos_all', methods: ['GET'])]
     public function getSexos(): JsonResponse
     {
@@ -186,7 +196,4 @@ class ProductoController extends AbstractController
 
         return new JsonResponse($sexos, JsonResponse::HTTP_OK);
     }
-
-
-
 }

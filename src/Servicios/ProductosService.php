@@ -40,8 +40,8 @@ class ProductosService
             empty($data['precio']) ||
             empty($data['imagen']) ||
             empty($data['sexo']) ||
-            empty($data['id_talla']) ||
-            empty($data['id_color'])
+            empty($data['talla']) ||
+            empty($data['color'])
         ) {
             throw new \InvalidArgumentException("Todos los campos son obligatorios.");
         }
@@ -78,14 +78,14 @@ class ProductosService
         }
 
         // Buscar y setear la talla
-        $talla = $this->entityManager->getRepository('App\Entity\Tallas')->find($data['id_talla']);
+        $talla = $this->entityManager->getRepository('App\Entity\Tallas')->find($data['talla']);
         if (!$talla) {
             throw new \InvalidArgumentException("Talla no encontrada.");
         }
         $producto->setTalla($talla);
 
         // Buscar y setear el color
-        $color = $this->entityManager->getRepository('App\Entity\Colores')->find($data['id_color']);
+        $color = $this->entityManager->getRepository('App\Entity\Colores')->find($data['color']);
         if (!$color) {
             throw new \InvalidArgumentException("Color no encontrado.");
         }
@@ -186,8 +186,8 @@ class ProductosService
             'precio' => $producto->getPrecio(),
             'imagen' => $producto->getImagen(),
             'sexo' => $producto->getSexo(),
-            'id_talla' => $producto->getTalla()?->getDescripcion(), // Si tienes el método getNombre() en Tallas
-            'id_color' => $producto->getColor()?->getDescripcion()  // Si tienes el método getNombre() en Colores
+            'talla' => $producto->getTalla()?->getDescripcion(), // Si tienes el método getNombre() en Tallas
+            'color' => $producto->getColor()?->getDescripcion()  // Si tienes el método getNombre() en Colores
         ];
     }
     private function validateTipo(string $tipo): Tipo
@@ -216,18 +216,18 @@ class ProductosService
         return (float) $precio;
     }
 
-    public function findByTalla(int $id_talla): JsonResponse
+    public function findByTalla(int $talla): JsonResponse
     {
-        $productos = $this->productosRepository->findByTalla($id_talla); // Asegúrate de que el método findByTalla esté en tu repositorio
+        $productos = $this->productosRepository->findByTalla($talla); // Asegúrate de que el método findByTalla esté en tu repositorio
         return $this->json($productos);
     }
 
     /**
      * @Route("/api/productos/colores/{idColor}", name="productos_by_color", methods={"GET"})
      */
-    public function findByColor(int $id_color, ProductosRepository $productoRepository): JsonResponse
+    public function findByColor(int $color, ProductosRepository $productoRepository): JsonResponse
     {
-        $productos = $this->productosRepository->findByColor($id_color); // Asegúrate de que el método findByColor esté en tu repositorio
+        $productos = $this->productosRepository->findByColor($color); // Asegúrate de que el método findByColor esté en tu repositorio
         return $this->json($productos);
     }
 

@@ -35,7 +35,7 @@ class Productos
     private ?Sexo $sexo = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name:'id_talla',nullable: false)]
+    #[ORM\JoinColumn(name:'id_talla',nullable: false,)]
     private ?Tallas $talla = null;
 
     #[ORM\ManyToOne]

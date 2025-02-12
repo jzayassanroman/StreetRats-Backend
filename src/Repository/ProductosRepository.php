@@ -26,14 +26,15 @@ class ProductosRepository extends ServiceEntityRepository
     public function findAllProductos(): array
     {
         return $this->createQueryBuilder('p')
-            ->leftJoin('p.talla', 't')  // Asegúrate de que 'talla' es correcto en la entidad
+            ->leftJoin('p.talla', 't')
             ->addSelect('t')
-            ->leftJoin('p.color', 'c')  // Asegúrate de que 'color' es correcto en la entidad
+            ->leftJoin('p.color', 'c')
             ->addSelect('c')
             ->orderBy('p.id', 'ASC')
             ->getQuery()
-            ->getArrayResult();
+            ->getResult(); // <-- Devuelve objetos de la entidad Productos
     }
+
     public function save(Productos $producto, bool $flush = false): void
     {
         $this->getEntityManager()->persist($producto);
