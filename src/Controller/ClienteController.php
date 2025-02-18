@@ -216,7 +216,11 @@ class ClienteController extends AbstractController
             return $this->json(['error' => 'El cliente no tiene un usuario asociado'], 400);
         }
 
-        if ($usuario->getVerificationToken() !== $codigo) {
+        // Agregar registros de depuración
+        error_log('Código enviado: ' . $codigo);
+        error_log('Código almacenado: ' . $usuario->getVerificationToken());
+
+        if (trim($usuario->getVerificationToken()) !== trim($codigo)) {
             return $this->json(['error' => 'Código de verificación incorrecto'], 400);
         }
 
