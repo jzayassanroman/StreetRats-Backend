@@ -3,7 +3,6 @@
 namespace App\EventListener;
 
 use Lexik\Bundle\JWTAuthenticationBundle\Event\JWTCreatedEvent;
-use Symfony\Component\Security\Core\User\UserInterface;
 
 class JWTCreatedListener
 {
@@ -19,6 +18,21 @@ class JWTCreatedListener
         // Añadir custom claims al token JWT
         $payload = $event->getData();
         $payload['isVerified'] = $user->isVerified(); // Añadir el estado de verificación al JWT
+        $event->setData($payload);
+    }
+
+    public function TokenIdMetido(JWTCreatedEvent $event)
+    {
+        $user = $event->getUser();
+
+        if (!$user instanceof UserInterface) {
+            return;
+        }
+
+        // Agregamos el ID del usuario al payload del token
+        $payload = $event->getData();
+        $payload['id'] = $user->getId();
+
         $event->setData($payload);
     }
 
@@ -39,20 +53,6 @@ class JWTCreatedListener
         $event->setData($payload);
     }
 
-    public function TokenIdMetido(JWTCreatedEvent $event)
-    {
-        $user = $event->getUser();
-
-        if (!$user instanceof UserInterface) {
-            return;
-        }
-
-        // Agregamos el ID del usuario al payload del token
-        $payload = $event->getData();
-        $payload['id'] = $user->getId();
-
-        $event->setData($payload);
-    }
 
 
 }

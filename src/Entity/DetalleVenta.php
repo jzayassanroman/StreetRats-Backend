@@ -55,7 +55,7 @@ class DetalleVenta
         return $this->subtotal;
     }
 
-    private function setSubtotal(float $subtotal): static
+    public function setSubtotal(float $subtotal): static
     {
         $this->subtotal = $subtotal;
 
