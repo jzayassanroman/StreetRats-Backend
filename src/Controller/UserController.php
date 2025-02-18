@@ -9,10 +9,12 @@ use App\Enum\Rol;
 use App\Servicios\UserService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[Route('/usuarios')]
 class UserController extends AbstractController
@@ -25,6 +27,7 @@ class UserController extends AbstractController
         $this->userService = $userService;
         $this->userRepository = $userRepository;
     }
+
 
 //    #[Route('/crear', name: 'user_create', methods: ['POST'])]
 //    public function create(Request $request): JsonResponse
@@ -46,28 +49,33 @@ class UserController extends AbstractController
 //        }
 //    }
 
-    #[Route('/api/registro', name: 'user_registro', methods: ['POST'])]
-    public function registro(Request $request, UserPasswordHasherInterface $userPasswordHasher,
-                             EntityManagerInterface $entityManager): JsonResponse
-    {
-        $body = json_decode($request->getContent(), true);
+        #[Route('/api/registro', name: 'user_registro', methods: ['POST'])]
+        public function registro(Request $request, UserPasswordHasherInterface $userPasswordHasher,
+                                 EntityManagerInterface $entityManager): JsonResponse
+        {
+            $body = json_decode($request->getContent(), true);
 
-//        if (!isset($body['username']) || !isset($body['password'])) {
-//            return new JsonResponse(['error' => 'Faltan datos requeridos'], JsonResponse::HTTP_BAD_REQUEST);
-//        }
+    //        if (!isset($body['username']) || !isset($body['password'])) {
+    //            return new JsonResponse(['error' => 'Faltan datos requeridos'], JsonResponse::HTTP_BAD_REQUEST);
+    //        }
 
-        $nuevo_usuario = new User();
-        $nuevo_usuario->setUsername($body['username']);
-        $nuevo_usuario->setPassword($userPasswordHasher->hashPassword($nuevo_usuario, $body['password']));
-        $nuevo_usuario->setRol(Rol::USER);
+            $nuevo_usuario = new User();
+            $nuevo_usuario->setUsername($body['username']);
+            $nuevo_usuario->setPassword($userPasswordHasher->hashPassword($nuevo_usuario, $body['password']));
+            $nuevo_usuario->setRol(Rol::USER);
 
-        $entityManager->persist($nuevo_usuario);
-        $entityManager->flush();
+            $entityManager->persist($nuevo_usuario);
+            $entityManager->flush();
 
-        return new JsonResponse([
-            'mensaje' => 'Usuario creado correctamente',
-            'id' => $nuevo_usuario->getId()
-        ], JsonResponse::HTTP_CREATED);
+            return new JsonResponse([
+                'mensaje' => 'Usuario creado correctamente',
+                'id' => $nuevo_usuario->getId(),
+                'username' => $nuevo_usuario->getUsername(),
+                'password' => $nuevo_usuario->getPassword(),
+                'rol' => $nuevo_usuario->getRoles(),
+            ], JsonResponse::HTTP_CREATED);
 
-    }
+        }
+
+
 }
