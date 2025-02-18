@@ -11,8 +11,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-#[Route('/pedidos')]
 
+#[Route('/pedidos')]
 class PedidoController extends AbstractController
 {
     private PedidoService $pedidoService;
@@ -35,35 +35,31 @@ class PedidoController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        // Validar que los datos necesarios estén presentes
-        if (empty($data['productoId']) || empty($data['clienteId']) || empty($data['total']) || empty($data['estado']) || empty($data['fecha'])) {
+        if (empty($data['id_cliente']) || empty($data['total']) || empty($data['estado']) || empty($data['productos']) || empty($data['fecha'])) {
             return new JsonResponse(['error' => 'Faltan datos necesarios.'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
         try {
-            // Crear el pedido pasando los datos, incluyendo estado y fecha
-            $pedido = $this->pedidoService->crearPedido(
-                $data['productoId'],
-                $data['clienteId'],
-                $data['total'],
-                $data['estado'],  // Se incluye el estado
-                new \DateTime($data['fecha'])  // Se convierte la fecha en un objeto DateTime
-            );
+            $fecha = new \DateTime($data['fecha']);
+            $clienteId = $data['id_cliente'];
+            $total = $data['total'];
+            $estado = $data['estado'];
+            $productosData = $data['productos'];
 
-            // Retornar los detalles del pedido creado
+            $pedido = $this->pedidoService->crearPedido($clienteId, $total, $estado, $fecha, $productosData);
+
             return new JsonResponse([
                 'id' => $pedido->getId(),
                 'total' => $pedido->getTotal(),
                 'estado' => $pedido->getEstado()->value,
                 'fecha' => $pedido->getFecha()->format('Y-m-d'),
-                'producto_id' => $pedido->getIdProducto()->getId(),
-                'cliente_id' => $pedido->getIdCliente()->getId(),
             ], JsonResponse::HTTP_CREATED);
 
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
+
     #[Route('/editar/{id}', name: 'editar_pedido', methods: ['PUT'])]
     public function editarPedido(Request $request, int $id): JsonResponse
     {
@@ -119,6 +115,7 @@ class PedidoController extends AbstractController
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_NOT_FOUND);
         }
     }
+
     #[Route('/find/{id}', name: 'pedido_find_by_id', methods: ['GET'])]
     public function findById(int $id, PedidoRepository $pedidoRepository): JsonResponse
     {
@@ -135,5 +132,4 @@ class PedidoController extends AbstractController
             'estado' => $pedido->getEstado(),
         ]);
     }
-
 }
