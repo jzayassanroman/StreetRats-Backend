@@ -122,28 +122,58 @@ class ClienteController extends AbstractController
         }
     }
 
-    #[Route('/editar/{id}', name: 'cliente_edit', methods: ['PUT'])]
-    public function edit(int $id, Request $request): JsonResponse
+    #[Route('/editar', name: 'cliente_edit', methods: ['PUT'])]
+    public function edit(Request $request, ClienteRepository $clienteRepository, EntityManagerInterface $entityManager): JsonResponse
     {
-        // Obtener los datos del cuerpo de la solicitud
+        $user = $this->getUser(); // Obtener usuario desde el token
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Usuario no autenticado'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
+        // Obtener el cliente asociado al usuario
+        $cliente = $clienteRepository->findOneBy(['id_user' => $user->getId()]);
+
+        if (!$cliente) {
+            return new JsonResponse(['error' => 'Cliente no encontrado'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        // Obtener los datos de la solicitud
         $data = json_decode($request->getContent(), true);
 
         try {
-            $cliente = $this->clienteService->updateCliente($id, $data); // Llamar al servicio para editar el cliente
+            // Actualizar datos del cliente
+            $cliente->setNombre($data['nombre'] ?? $cliente->getNombre());
+            $cliente->setApellido($data['apellido'] ?? $cliente->getApellido());
+            $cliente->setEmail($data['email'] ?? $cliente->getEmail());
+            $cliente->setTelefono($data['telefono'] ?? $cliente->getTelefono());
+            $cliente->setDireccion($data['direccion'] ?? $cliente->getDireccion());
+
+            // Si se proporciona un nuevo username, actualizarlo también
+            if (isset($data['username'])) {
+                $usuario = $user;  // Usamos el usuario que ya está autenticado
+
+                // Validar si el username no es vacío y si es diferente al actual
+                if (!empty($data['username']) && $data['username'] !== $usuario->getUsername()) {
+                    $usuario->setUsername($data['username']);
+                    $entityManager->persist($usuario); // Guardar cambios en el usuario
+                }
+            }
+
+            $entityManager->flush(); // Guardar todos los cambios en cliente y usuario
 
             return new JsonResponse([
+                'message' => 'Cliente y username actualizado correctamente',
                 'id' => $cliente->getId(),
-                'nombre' => $cliente->getNombre(),
-                'apellido' => $cliente->getApellido(),
-                'email' => $cliente->getEmail(),
-                'telefono' => $cliente->getTelefono(),
-                'direccion' => $cliente->getDireccion(),
+                'username' => $user->getUsername(),
             ], JsonResponse::HTTP_OK);
-
         } catch (\Exception $e) {
-            return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['error' => 'Error al actualizar el cliente y username'], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
+
+
+
 
     #[Route('/eliminar/{id}', name: 'cliente_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
