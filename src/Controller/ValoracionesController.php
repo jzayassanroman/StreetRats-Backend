@@ -4,15 +4,15 @@ namespace App\Controller;
 
 use App\Entity\Cliente;
 use App\Entity\Productos;
-use App\Entity\User;
 use App\Entity\Valoraciones;
+
+use App\Entity\User;
 
 
 use App\Repository\ValoracionesRepository;
 use App\Servicios\ValoracionesService;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
