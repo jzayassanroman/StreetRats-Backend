@@ -105,18 +105,22 @@ class ProductosRepository extends ServiceEntityRepository
 
         return $producto;
     }
+    // src/Repository/ProductosRepository.php
+
     public function eliminarProducto(int $id): void
     {
-        // Buscar el producto en el repositorio por ID
-        $producto = $this->productosRepository->find($id);
+        $entityManager = $this->getEntityManager();
+        $producto = $this->find($id);
 
         if (!$producto) {
             throw new NotFoundHttpException("Producto no encontrado.");
         }
 
-        // Usar el repositorio para eliminar el producto
-        $this->productosRepository->eliminarProducto($producto);
+        $entityManager->remove($producto);
+        $entityManager->flush();
     }
+
+
     /**
      * Encuentra un producto por su ID
      *
@@ -155,6 +159,7 @@ class ProductosRepository extends ServiceEntityRepository
     }
 
     public function searchAndFilter(?string $nombre, ?string $tipo, ?string $sexo, ?int $idTalla, ?int $idColor)
+
     {
         $qb = $this->createQueryBuilder('p')
             ->leftJoin('p.talla', 't')
@@ -162,7 +167,7 @@ class ProductosRepository extends ServiceEntityRepository
 
         if ($nombre) {
             $qb->andWhere('p.nombre LIKE :nombre')
-                ->setParameter('nombre', '%' . $nombre . '%');
+                ->setParameter('nombre',    '%' . $nombre . '%');
         }
 
         if ($tipo) {
@@ -176,19 +181,18 @@ class ProductosRepository extends ServiceEntityRepository
         }
 
         if ($idTalla) {
-            dump("Filtrando por talla: " . $idTalla);
             $qb->andWhere('t.id = :idTalla')
                 ->setParameter('idTalla', $idTalla);
         }
 
         if ($idColor) {
-            dump("Filtrando por color: " . $idColor);
             $qb->andWhere('c.id = :idColor')
                 ->setParameter('idColor', $idColor);
         }
 
         return $qb->getQuery()->getResult();
     }
+
 
 
 

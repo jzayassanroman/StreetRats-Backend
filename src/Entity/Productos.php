@@ -100,10 +100,9 @@ class Productos
         return $this->imagen;
     }
 
-    public function setImagen(string $imagen): static  // Cambia 'setImg' a 'setImagen'
+    public function setImagen(array $imagen): static  // Cambia 'setImg' a 'setImagen'
     {
-        $this->imagen = $imagen;
-
+        $this->imagen = json_encode($imagen);
         return $this;
     }
 

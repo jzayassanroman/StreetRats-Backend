@@ -126,12 +126,17 @@ class ProductoController extends AbstractController
         return new JsonResponse(['message' => 'Producto creado exitosamente'], JsonResponse::HTTP_CREATED);
     }
 
-    #[Route('/editar/{id}', name: 'productos_edit', methods: ['PUT'])]
+    #[Route('/editar/{id}', name: 'productos_edit', methods: ['PUT'],requirements: ['id' => '\d+'])]
     public function edit(int $id, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
         try {
+            // Verificar que el campo imagen sea un array
+            if (isset($data['imagen']) && !is_array($data['imagen'])) {
+                return new JsonResponse(['error' => 'El campo imagen debe ser un array'], JsonResponse::HTTP_BAD_REQUEST);
+            }
+
             $producto = $this->productosService->actualizarProducto($id, $data);
 
             return new JsonResponse([
@@ -140,7 +145,7 @@ class ProductoController extends AbstractController
                 'descripcion' => $producto->getDescripcion(),
                 'tipo' => $producto->getTipo()->value,
                 'precio' => $producto->getPrecio(),
-                'imagen' => $producto->getImagen(),
+                'imagen' => json_decode($producto->getImagen(), true), // Decodificar el JSON de imágenes
                 'sexo' => $producto->getSexo()->value,
                 'talla' => $producto->getTalla() ? $producto->getTalla()->getId() : null,
                 'color' => $producto->getColor() ? $producto->getColor()->getId() : null,
