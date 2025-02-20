@@ -123,22 +123,18 @@ class ClienteController extends AbstractController
     }
 
     #[Route('/editar', name: 'cliente_edit', methods: ['PUT'])]
-    public function edit(Request $request, ClienteRepository $clienteRepository, EntityManagerInterface $entityManager): JsonResponse
+    public function edit(Request $request, ClienteRepository $clienteRepository, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
     {
-        $user = $this->getUser(); // Obtener usuario desde el token
-
+        $user = $this->getUser();
         if (!$user) {
             return new JsonResponse(['error' => 'Usuario no autenticado'], JsonResponse::HTTP_UNAUTHORIZED);
         }
 
-        // Obtener el cliente asociado al usuario
         $cliente = $clienteRepository->findOneBy(['id_user' => $user->getId()]);
-
         if (!$cliente) {
             return new JsonResponse(['error' => 'Cliente no encontrado'], JsonResponse::HTTP_NOT_FOUND);
         }
 
-        // Obtener los datos de la solicitud
         $data = json_decode($request->getContent(), true);
 
         try {
@@ -149,28 +145,52 @@ class ClienteController extends AbstractController
             $cliente->setTelefono($data['telefono'] ?? $cliente->getTelefono());
             $cliente->setDireccion($data['direccion'] ?? $cliente->getDireccion());
 
-            // Si se proporciona un nuevo username, actualizarlo también
-            if (isset($data['username'])) {
-                $usuario = $user;  // Usamos el usuario que ya está autenticado
-
-                // Validar si el username no es vacío y si es diferente al actual
-                if (!empty($data['username']) && $data['username'] !== $usuario->getUsername()) {
-                    $usuario->setUsername($data['username']);
-                    $entityManager->persist($usuario); // Guardar cambios en el usuario
-                }
+            // Actualizar el username del usuario asociado
+            if (!empty($data['username'])) {
+                $user->setUsername($data['username']);
+                $entityManager->persist($user);
             }
 
-            $entityManager->flush(); // Guardar todos los cambios en cliente y usuario
+            $entityManager->flush(); // Guardar cambios
 
             return new JsonResponse([
-                'message' => 'Cliente y username actualizado correctamente',
-                'id' => $cliente->getId(),
-                'username' => $user->getUsername(),
+                'message' => 'Cliente y username actualizados correctamente',
+                'id' => $cliente->getId()
             ], JsonResponse::HTTP_OK);
         } catch (\Exception $e) {
-            return new JsonResponse(['error' => 'Error al actualizar el cliente y username'], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['error' => 'Error al actualizar el cliente'], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
+
+
+    #[Route('/usuario', name: 'cliente_por_usuario', methods: ['GET'])]
+    public function getClienteByUser(ClienteRepository $clienteRepository): JsonResponse
+    {
+        $user = $this->getUser(); // Obtener el usuario desde el token
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Usuario no autenticado'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
+        // Obtener el cliente asociado al usuario autenticado
+        $cliente = $clienteRepository->findOneBy(['id_user' => $user->getId()]);
+
+        if (!$cliente) {
+            return new JsonResponse(['error' => 'Cliente no encontrado'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        // Retornar los datos del cliente en formato JSON incluyendo el username
+        return new JsonResponse([
+            'id' => $cliente->getId(),
+            'nombre' => $cliente->getNombre(),
+            'apellido' => $cliente->getApellido(),
+            'email' => $cliente->getEmail(),
+            'telefono' => $cliente->getTelefono(),
+            'direccion' => $cliente->getDireccion(),
+            'username' => $user->getUsername()  // Asegúrate de incluir el username del usuario
+        ], JsonResponse::HTTP_OK);
+    }
+
 
 
 
