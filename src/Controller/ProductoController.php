@@ -110,13 +110,16 @@ class ProductoController extends AbstractController
             return new JsonResponse(['error' => 'Sexo no válido'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
+        // Convertir la cadena de URLs de imagen en un array
+        $imagenesArray = explode(',', $imagen);
+
         // Crear el producto
         $producto = new Productos();
         $producto->setNombre($nombre);
         $producto->setDescripcion($descripcion);
         $producto->setTipo($tipo);
         $producto->setPrecio((float)$precio);
-        $producto->setImagen($imagen); // Validación aplicada
+        $producto->setImagen($imagenesArray); // Pasar el array de imágenes
         $producto->setSexo($sexo);
         $producto->setTalla($talla);
         $producto->setColor($color);
@@ -125,7 +128,6 @@ class ProductoController extends AbstractController
 
         return new JsonResponse(['message' => 'Producto creado exitosamente'], JsonResponse::HTTP_CREATED);
     }
-
     #[Route('/editar/{id}', name: 'productos_edit', methods: ['PUT'],requirements: ['id' => '\d+'])]
     public function edit(int $id, Request $request): JsonResponse
     {
