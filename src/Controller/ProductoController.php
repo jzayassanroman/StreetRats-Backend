@@ -79,7 +79,7 @@ class ProductoController extends AbstractController
         $descripcion = $data['descripcion'] ?? null;
         $tipoStr = $data['tipo'] ?? null;
         $precio = $data['precio'] ?? null;
-        $imagen = $data['imagen'] ?? null; // Validación de imagen incluida
+        $imagen = $data['imagen'] ?? null;
         $sexoStr = $data['sexo'] ?? null;
         $talla = $data['talla'] ?? null;
         $color = $data['color'] ?? null;
