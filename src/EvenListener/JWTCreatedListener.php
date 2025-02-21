@@ -41,18 +41,25 @@ class JWTCreatedListener
     {
         $user = $event->getUser();
 
-        // Verifica si se obtiene el rol correctamente
-        error_log('Roles obtenidos en onJWTCreated: ' . json_encode($user->getRoles()));
+        // Verifica si el usuario es válido
+        if (!$user instanceof UserInterface) {
+            return;
+        }
 
         $roles = $user->getRoles();
         $payload = $event->getData();
         $payload['rol'] = $roles[0] ?? 'User'; // Asegura que siempre haya un rol
 
-        // Log para ver el payload final antes de enviarlo
-        error_log('Payload final del JWT: ' . json_encode($payload));
+        // Buscar el Cliente asociado al usuario
+        $cliente = $user->getCliente(); // 🔹 Asegúrate de que el método `getCliente()` existe en `User`
+
+        if ($cliente) {
+            $payload['id_cliente'] = $cliente->getId(); // Agregar ID del cliente al token
+        }
 
         $event->setData($payload);
     }
+
 
 
 

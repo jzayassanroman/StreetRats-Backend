@@ -132,4 +132,28 @@ class PedidoController extends AbstractController
             'estado' => $pedido->getEstado(),
         ]);
     }
+
+    #[Route('/cliente/{id_cliente}', name: 'pedidos_por_cliente', methods: ['GET'])]
+    public function getPedidosPorCliente(int $id_cliente, PedidoRepository $pedidoRepository): JsonResponse
+    {
+        $pedidos = $pedidoRepository->findBy(['id_cliente' => $id_cliente]);
+
+
+        if (!$pedidos) {
+            return $this->json(['error' => 'No hay pedidos para este cliente'], 404);
+        }
+
+        $result = [];
+        foreach ($pedidos as $pedido) {
+            $result[] = [
+                'id' => $pedido->getId(),
+                'fecha' => $pedido->getFecha()->format('Y-m-d'),
+                'total' => $pedido->getTotal(),
+                'estado' => $pedido->getEstado(),
+            ];
+        }
+
+        return $this->json($result);
+    }
+
 }

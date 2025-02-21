@@ -32,6 +32,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'verificationtoken', type: 'string', length: 255, nullable: true)]
     private ?string $verificationToken = null;
 
+    #[ORM\OneToOne(mappedBy: "id_user", targetEntity: Cliente::class)]
+    private ?Cliente $cliente = null;
+
+    public function getCliente(): ?Cliente
+    {
+        return $this->cliente;
+    }
+
     public function __construct()
     {
         $this->verificationToken = bin2hex(random_bytes(16));
