@@ -25,6 +25,83 @@ class ProductoController extends AbstractController
         $this->productosService = $productosService;
         $this->productosRepository = $productosRepository;
     }
+    #[Route('/filtros', name: 'filtrar_productos', methods: ['GET'])]
+    public function filtrar(Request $request, ProductosRepository $productoRepository): JsonResponse
+    {
+        $nombre = $request->query->get('nombre');
+        $tipo = $request->query->get('tipo');
+        $sexo = $request->query->get('sexo');
+        $talla = $request->query->get('talla');
+        $color = $request->query->get('color');
+        $precioMin = $request->query->get('precioMin');
+        $precioMax = $request->query->get('precioMax');
+
+        $productos = $productoRepository->searchAndFilter($nombre, $tipo, $sexo, $talla, $color, $precioMin, $precioMax);
+
+        return $this->json(
+            array_map(function ($producto) {
+                return [
+                    'id' => $producto->getId(),
+                    'nombre' => $producto->getNombre(),
+                    'tipo' => $producto->getTipo(),
+                    'sexo' => $producto->getSexo(),
+                    'precio' => $producto->getPrecio(),
+                    'imagenes' => json_decode($producto->getImagen(), true), // 🔥 CONVIERTE EL STRING A ARRAY 🔥
+                    'talla' => $producto->getTalla() ? $producto->getTalla()->getDescripcion() : null,
+                    'color' => $producto->getColor() ? $producto->getColor()->getDescripcion() : null,
+                ];
+            }, $productos)
+        );
+
+    }
+//    #[Route('/filtros', name: 'filtrar_productos', methods: ['GET'])]
+//    public function filtros(Request $request, ProductosRepository $productoRepository): JsonResponse
+//    {
+//        dd($request->query->all()); // Ver qué valores se están recibiendo en la URL
+//        $tipo = $request->query->get('tipo');
+//        $precio = $request->query->get('precio');
+//        $sexo = $request->query->get('sexo');
+//        $talla = $request->query->get('talla');
+//
+//        $productos = $productoRepository->filtrarProductos($tipo, $precio, $sexo, $talla);
+//
+//        return $this->json($productos);
+//    }
+
+    #[Route('/buscar', name: 'buscar_productos', methods: ['GET'])]
+    public function buscar(Request $request, ProductosRepository $productoRepository): JsonResponse
+    {
+        $query = $request->query->get('nombre', '');
+
+        if (!$query) {
+            return $this->json(['error' => 'No search term provided'], 400);
+        }
+
+        $productos = $productoRepository->searchByName($query);
+
+        // Formateamos la respuesta para incluir todos los campos
+        $formattedProducts = array_map(function ($producto) {
+            $imagenes = array_filter(explode("https", $producto->getImagen()));
+            $imagenes = array_map(fn($img) => "https" . $img, $imagenes);
+
+            return [
+                'id' => $producto->getId(),
+                'nombre' => $producto->getNombre(),
+                'descripcion' => $producto->getDescripcion(),
+                'tipo' => $producto->getTipo(),
+                'precio' => $producto->getPrecio(),
+                'imagenes' => json_decode($producto->getImagen(), true), // 🔥 CONVIERTE EL STRING A ARRAY 🔥
+                'sexo' => $producto->getSexo(),
+                'talla' => $producto->getTalla() ? $producto->getTalla()->getDescripcion() : null,
+                'color' => $producto->getColor() ? $producto->getColor()->getDescripcion() : null,
+            ];
+        }, $productos);
+
+        return $this->json($formattedProducts);
+
+    }
+
+
     #[Route('/all', name: 'productos_all')]
     public function index(): JsonResponse
     {
@@ -38,10 +115,10 @@ class ProductoController extends AbstractController
                 'descripcion' => $producto->getDescripcion(),
                 'tipo' => $producto->getTipo(),
                 'precio' => $producto->getPrecio(),
-                'imagenes' => json_decode($producto->getImagen(), true), // 🔥 CONVIERTE EL STRING A ARRAY 🔥
+                'imagen' => json_decode($producto->getImagen(), true), // 🔥 CONVIERTE EL STRING A ARRAY 🔥
                 'sexo' => $producto->getSexo(),
-                'talla' => $producto->getIdTalla() ? $producto->getIdTalla()->getId() : null,
-                'color' => $producto->getIdColor() ? $producto->getIdColor()->getId() : null,
+                'talla' => $producto->getTalla() ? $producto->getTalla()->getId() : null,
+                'color' => $producto->getColor() ? $producto->getColor()->getId() : null,
             ];
         }, $productos);
 
@@ -158,51 +235,114 @@ class ProductoController extends AbstractController
 
         return new JsonResponse($producto, JsonResponse::HTTP_OK);
     }
+
     #[Route('/tipos', name: 'productos_por_categoria', methods: ['GET'])]
-    public function getProductos(ProductosRepository $productoRepository, Request $request): JsonResponse
+    public function getProductos(ProductosRepository $productoRepository, Request $request, TallasRepository $tallaRepository, ColoresRepository $colorRepository): JsonResponse
     {
         $tipo = $request->query->get('tipo');
 
         if ($tipo !== null) {
-            // Convertir a capitalizado para que coincida con los valores del Enum
-            $tipo = ucfirst(strtolower($tipo));
+            file_put_contents('php://stderr', "Tipo recibido: $tipo\n"); // LOG
 
-            // Obtener los valores válidos del Enum
-            $tiposValidos = array_map(fn($tipo) => $tipo->value, Tipo::cases());
+            // Convertir el tipo recibido a minúsculas
+            $tipo = strtolower($tipo);
+            file_put_contents('php://stderr', "Tipo convertido: $tipo\n"); // LOG
 
-            if (!in_array($tipo, $tiposValidos, true)) {
+            // Obtener los valores del Enum en minúsculas
+            $tiposValidos = [];
+            foreach (Tipo::cases() as $tipoEnum) {
+                $tiposValidos[strtolower($tipoEnum->value)] = $tipoEnum; // Guardamos el Enum asociado
+            }
+
+            if (!isset($tiposValidos[$tipo])) {
+                file_put_contents('php://stderr', "Error: Tipo no válido\n"); // LOG
                 return new JsonResponse(['error' => 'Tipo de producto no válido'], 400);
             }
 
-            // Convertir el string recibido en un objeto Enum
-            $tipoEnum = Tipo::from($tipo);
+            // Obtener el Enum correspondiente al tipo recibido
+            $tipoEnum = $tiposValidos[$tipo];
 
-            // Buscar productos por tipo utilizando el Enum
+            // Buscar productos por tipo
             $productos = $productoRepository->findBy(['tipo' => $tipoEnum]);
         } else {
             // Si no se proporciona tipo, devolver todos los productos
             $productos = $productoRepository->findAll();
         }
 
-        // Convertir los productos a un array para asegurarnos de que se serializan correctamente
-        $productosArray = array_map(function ($producto) {
+        // Convertir los productos en un array JSON serializable
+        $productosArray = array_map(function ($producto) use ($tallaRepository, $colorRepository) {
+            // Obtener la descripción de talla y color
+            $tallaDescripcion = 'N/A';
+            if ($producto->getTalla()) {
+                $talla = $tallaRepository->find($producto->getTalla()->getId());
+                $tallaDescripcion = $talla ? $talla->getDescripcion() : 'N/A';
+            }
+
+            $colorDescripcion = 'N/A';
+            if ($producto->getColor()) {
+                $color = $colorRepository->find($producto->getColor()->getId());
+                $colorDescripcion = $color ? $color->getDescripcion() : 'N/A';
+            }
+
             return [
                 'id' => $producto->getId(),
                 'nombre' => $producto->getNombre(),
                 'descripcion' => $producto->getDescripcion(),
-                'tipo' => $producto->getTipo() instanceof Tipo ? $producto->getTipo()->value : null, // Verifica si es Enum
+                'tipo' => $producto->getTipo()?->value, // Obtener el valor del Enum
                 'precio' => $producto->getPrecio(),
-                'imagen' => $producto->getImagen(),
-                'sexo' => $producto->getSexo() instanceof Sexo ? $producto->getSexo()->value : null,
-                'talla' => $producto->getTalla() ? $producto->getTalla()->getId() : null,
-                'color' => $producto->getColor() ? $producto->getColor()->getId() : null
+                'imagenes' => $this->formatImagenes($producto->getImagen()), // Asegurar que siempre sea un array
+                'sexo' => $producto->getSexo()?->value,
+                'talla' => [
+                    'id' => $producto->getTalla()?->getId(),
+                    'descripcion' => $tallaDescripcion
+                ],
+                'color' => [
+                    'id' => $producto->getColor()?->getId(),
+                    'descripcion' => $colorDescripcion
+                ]
             ];
         }, $productos);
 
         return new JsonResponse($productosArray, 200);
     }
+    private function formatImagenes($imagenes): array
+    {
+        if (is_array($imagenes)) {
+            return $imagenes; // ✅ Si ya es un array, lo devolvemos sin cambios.
+        }
 
+        if (is_string($imagenes)) {
+            // 🛠 Intentamos decodificar si es un JSON válido (viene entre corchetes [])
+            $jsonDecoded = json_decode($imagenes, true);
 
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $jsonDecoded; // ✅ Si es JSON válido, devolvemos el array decodificado.
+            }
+
+            // ✅ Si es una lista separada por comas, la convertimos a array manualmente
+            return array_filter(array_map('trim', explode(',', $imagenes)));
+        }
+
+        return []; // 🚨 Si no es ni string ni array, devolvemos array vacío.
+    }
+    #[Route('/precios-min-max', name: 'precios_min_max', methods: ['GET'])]
+    public function getPreciosMinMax(ProductosRepository $productoRepository): JsonResponse
+    {
+        $precios = $productoRepository->getMinMaxPrecios();
+
+        return $this->json([
+            'precioMin' => $precios['precioMin'] ?? 0,
+            'precioMax' => $precios['precioMax'] ?? 0
+        ]);
+    }
+    #[Route('/sexos', name: 'sexos_all', methods: ['GET'])]
+    public function getSexos(): JsonResponse
+    {
+        // Obtener los valores del enum Sexo
+        $sexos = array_map(fn($sexo) => $sexo->value, Sexo::cases());
+
+        return new JsonResponse($sexos, JsonResponse::HTTP_OK);
+    }
 
 
 

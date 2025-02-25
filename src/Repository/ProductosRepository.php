@@ -120,9 +120,9 @@ class ProductosRepository extends ServiceEntityRepository
     public function findById(int $id): ?Productos
     {
         $qb = $this->createQueryBuilder('p')
-            ->leftJoin('p.id_talla', 't')
+            ->leftJoin('p.talla', 't')
             ->addSelect('t')
-            ->leftJoin('p.id_color', 'c')
+            ->leftJoin('p.color', 'c')
             ->addSelect('c')
             ->where('p.id = :id')
             ->setParameter('id', $id);
@@ -137,8 +137,96 @@ class ProductosRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+    public function searchByName(string $query)
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.nombre LIKE :query')
+            ->setParameter('query', '%' . $query . '%')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function searchAndFilter(?string $nombre, ?string $tipo, ?string $sexo, ?int $idTalla, ?int $idColor, ?float $precioMin, ?float $precioMax)
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.talla', 't')
+            ->leftJoin('p.color', 'c');
+
+        if ($nombre) {
+            $qb->andWhere('p.nombre LIKE :nombre')
+                ->setParameter('nombre', '%' . $nombre . '%');
+        }
+
+        if ($tipo) {
+            $qb->andWhere('p.tipo = :tipo')
+                ->setParameter('tipo', $tipo);
+        }
+
+        if ($sexo) {
+            $qb->andWhere('p.sexo = :sexo')
+                ->setParameter('sexo', $sexo);
+        }
+
+        if ($idTalla) {
+            $qb->andWhere('t.id = :idTalla')
+                ->setParameter('idTalla', $idTalla);
+        }
+
+        if ($idColor) {
+            $qb->andWhere('c.id = :idColor')
+                ->setParameter('idColor', $idColor);
+        }
+        if ($precioMin !== null) {
+            $qb->andWhere('p.precio >= :precioMin')
+                ->setParameter('precioMin', $precioMin);
+        }
+
+        if ($precioMax !== null) {
+            $qb->andWhere('p.precio <= :precioMax')
+                ->setParameter('precioMax', $precioMax);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+//    public function filtrarProductos($tipo = null, $precio = null, $sexo = null, $talla = null)
+//    {
+//        $qb = $this->createQueryBuilder('p');
+//
+//        if ($tipo) {
+//            $qb->andWhere('p.tipo = :tipo')
+//                ->setParameter('tipo', $tipo);
+//        }
+//
+//        if ($precio) {
+//            $qb->andWhere('p.precio <= :precio')
+//                ->setParameter('precio', $precio);
+//        }
+//
+//        if ($sexo) {
+//            $qb->andWhere('p.sexo = :sexo')
+//                ->setParameter('sexo', $sexo);
+//        }
+//
+//        if ($talla) {
+//            $qb->andWhere('p.talla = :talla')
+//                ->setParameter('talla', $talla);
+//        }
+//
+//        $query = $qb->getQuery();
+//        dd($query->getSQL(), $query->getParameters()); // Ver la consulta generada
+//
+//        return $query->getResult();
+//    }
 
 
+    public function getMinMaxPrecios(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->select('MIN(p.precio) as precioMin, MAX(p.precio) as precioMax')
+            ->getQuery()
+            ->getSingleResult();
+    }
 
 
 //    /**
