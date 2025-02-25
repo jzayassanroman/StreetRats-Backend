@@ -257,40 +257,7 @@ class ProductosRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function searchAndFilter(?string $nombre, ?string $tipo, ?string $sexo, ?int $idTalla, ?int $idColor)
 
-    {
-        $qb = $this->createQueryBuilder('p')
-            ->leftJoin('p.talla', 't')
-            ->leftJoin('p.color', 'c');
-
-        if ($nombre) {
-            $qb->andWhere('p.nombre LIKE :nombre')
-                ->setParameter('nombre',    '%' . $nombre . '%');
-        }
-
-        if ($tipo) {
-            $qb->andWhere('p.tipo = :tipo')
-                ->setParameter('tipo', $tipo);
-        }
-
-        if ($sexo) {
-            $qb->andWhere('p.sexo = :sexo')
-                ->setParameter('sexo', $sexo);
-        }
-
-        if ($idTalla) {
-            $qb->andWhere('t.id = :idTalla')
-                ->setParameter('idTalla', $idTalla);
-        }
-
-        if ($idColor) {
-            $qb->andWhere('c.id = :idColor')
-                ->setParameter('idColor', $idColor);
-        }
-
-        return $qb->getQuery()->getResult();
-    }
 
 
 
