@@ -122,28 +122,78 @@ class ClienteController extends AbstractController
         }
     }
 
-    #[Route('/editar/{id}', name: 'cliente_edit', methods: ['PUT'])]
-    public function edit(int $id, Request $request): JsonResponse
+    #[Route('/editar', name: 'cliente_edit', methods: ['PUT'])]
+    public function edit(Request $request, ClienteRepository $clienteRepository, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
     {
-        // Obtener los datos del cuerpo de la solicitud
+        $user = $this->getUser();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Usuario no autenticado'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
+        $cliente = $clienteRepository->findOneBy(['id_user' => $user->getId()]);
+        if (!$cliente) {
+            return new JsonResponse(['error' => 'Cliente no encontrado'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
         $data = json_decode($request->getContent(), true);
 
         try {
-            $cliente = $this->clienteService->updateCliente($id, $data); // Llamar al servicio para editar el cliente
+            // Actualizar datos del cliente
+            $cliente->setNombre($data['nombre'] ?? $cliente->getNombre());
+            $cliente->setApellido($data['apellido'] ?? $cliente->getApellido());
+            $cliente->setEmail($data['email'] ?? $cliente->getEmail());
+            $cliente->setTelefono($data['telefono'] ?? $cliente->getTelefono());
+            $cliente->setDireccion($data['direccion'] ?? $cliente->getDireccion());
+
+            // Actualizar el username del usuario asociado
+            if (!empty($data['username'])) {
+                $user->setUsername($data['username']);
+                $entityManager->persist($user);
+            }
+
+            $entityManager->flush(); // Guardar cambios
 
             return new JsonResponse([
-                'id' => $cliente->getId(),
-                'nombre' => $cliente->getNombre(),
-                'apellido' => $cliente->getApellido(),
-                'email' => $cliente->getEmail(),
-                'telefono' => $cliente->getTelefono(),
-                'direccion' => $cliente->getDireccion(),
+                'message' => 'Cliente y username actualizados correctamente',
+                'id' => $cliente->getId()
             ], JsonResponse::HTTP_OK);
-
         } catch (\Exception $e) {
-            return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['error' => 'Error al actualizar el cliente'], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
+
+
+    #[Route('/usuario', name: 'cliente_por_usuario', methods: ['GET'])]
+    public function getClienteByUser(ClienteRepository $clienteRepository): JsonResponse
+    {
+        $user = $this->getUser(); // Obtener el usuario desde el token
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'Usuario no autenticado'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
+        // Obtener el cliente asociado al usuario autenticado
+        $cliente = $clienteRepository->findOneBy(['id_user' => $user->getId()]);
+
+        if (!$cliente) {
+            return new JsonResponse(['error' => 'Cliente no encontrado'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        // Retornar los datos del cliente en formato JSON incluyendo el username
+        return new JsonResponse([
+            'id' => $cliente->getId(),
+            'nombre' => $cliente->getNombre(),
+            'apellido' => $cliente->getApellido(),
+            'email' => $cliente->getEmail(),
+            'telefono' => $cliente->getTelefono(),
+            'direccion' => $cliente->getDireccion(),
+            'username' => $user->getUsername()  // Asegúrate de incluir el username del usuario
+        ], JsonResponse::HTTP_OK);
+    }
+
+
+
+
 
     #[Route('/eliminar/{id}', name: 'cliente_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
@@ -216,7 +266,11 @@ class ClienteController extends AbstractController
             return $this->json(['error' => 'El cliente no tiene un usuario asociado'], 400);
         }
 
-        if ($usuario->getVerificationToken() !== $codigo) {
+        // Agregar registros de depuración
+        error_log('Código enviado: ' . $codigo);
+        error_log('Código almacenado: ' . $usuario->getVerificationToken());
+
+        if (trim($usuario->getVerificationToken()) !== trim($codigo)) {
             return $this->json(['error' => 'Código de verificación incorrecto'], 400);
         }
 

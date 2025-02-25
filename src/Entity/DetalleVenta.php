@@ -25,7 +25,7 @@ class DetalleVenta
     private ?Pedido $pedido = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name: 'id_producto', nullable: false)]
+    #[ORM\JoinColumn(name: 'id_producto', nullable: false, onDelete: 'CASCADE')]
     private ?Productos $producto = null;
 
     public function getId(): ?int
@@ -55,7 +55,7 @@ class DetalleVenta
         return $this->subtotal;
     }
 
-    private function setSubtotal(float $subtotal): static
+    public function setSubtotal(float $subtotal): static
     {
         $this->subtotal = $subtotal;
 

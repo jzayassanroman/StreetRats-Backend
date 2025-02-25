@@ -26,15 +26,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'rol', enumType: Rol::class)]
     private ?Rol $rol = null;
 
-    #[ORM\Column(name: 'isverified', type: 'boolean', nullable: false)]
+    #[ORM\Column(name: 'isverified', type: 'boolean', nullable: true)]
     private ?bool $isVerified = false;
 
     #[ORM\Column(name: 'verificationtoken', type: 'string', length: 255, nullable: true)]
     private ?string $verificationToken = null;
 
+    #[ORM\OneToOne(mappedBy: "id_user", targetEntity: Cliente::class)]
+    private ?Cliente $cliente = null;
+
+    public function getCliente(): ?Cliente
+    {
+        return $this->cliente;
+    }
+
     public function __construct()
     {
-        $this->verificationToken = bin2hex(random_bytes(16)); // Genera un token aleatorio
+        $this->verificationToken = bin2hex(random_bytes(16));
+        $this->rol = Rol::USER;// Genera un token aleatorio
     }
 
     public function getId(): ?int
@@ -66,21 +75,26 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getRol(): array
-    {
-        return $this->rol;
-    }
 
-    public function setRol(Rol $rol): static
+    public function setRol(Rol $rol): self
     {
         $this->rol = $rol;
-
         return $this;
     }
 
+    // Método para obtener el rol
     public function getRoles(): array
     {
-        return [$this->rol->value];
+        return $this->rol ? [$this->rol->value] : ['User']; // ✅ Corrige la asignación de roles
+    }
+
+
+
+
+    // Método para verificar si el usuario es Admin
+    public function isAdmin(): bool
+    {
+        return in_array(Rol::ADMIN->value, $this->getRoles());
     }
 
     public function eraseCredentials(): void
@@ -90,8 +104,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getUserIdentifier(): string
     {
-        return $this->username;
+        return (string) $this->id; // Asegura que se incluya el ID en el token
     }
+
 
     public function isVerified(): ?bool
     {
@@ -124,4 +139,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             'isVerified' => $this->isVerified()
         ];
     }
+
+
 }

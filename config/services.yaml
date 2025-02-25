@@ -15,3 +15,6 @@ services:
     App\EventListener\JWTCreatedListener:
         tags:
             - { name: 'kernel.event_listener', event: 'lexik_jwt_authentication.on_jwt_created', method: 'onLexikJwtAuthenticationOnJwtCreated' }
+            - { name: 'kernel.event_listener', event: 'lexik_jwt_authentication.on_jwt_created', method: 'onJWTCreated', priority: 10 }
+            - { name: 'kernel.event_listener', event: 'lexik_jwt_authentication.on_jwt_created', method: 'TokenIdMetido' }
+

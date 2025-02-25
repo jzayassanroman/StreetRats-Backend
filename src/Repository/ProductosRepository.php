@@ -11,6 +11,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * @extends ServiceEntityRepository<Productos>
@@ -25,9 +26,13 @@ class ProductosRepository extends ServiceEntityRepository
     public function findAllProductos(): array
     {
         return $this->createQueryBuilder('p')
+            ->leftJoin('p.talla', 't')
+            ->addSelect('t')
+            ->leftJoin('p.color', 'c')
+            ->addSelect('c')
             ->orderBy('p.id', 'ASC')
             ->getQuery()
-            ->getResult(); // ✅ Devuelve un array de objetos Productos
+            ->getResult(); // <-- Devuelve objetos de la entidad Productos
     }
 
     public function save(Productos $producto, bool $flush = false): void
@@ -81,17 +86,17 @@ class ProductosRepository extends ServiceEntityRepository
         }
 
         if (isset($data['talla'])) {
-            $talla = $this->getEntityManager()->getRepository(Tallas::class)->find($data['id_talla']);
+            $talla = $this->getEntityManager()->getRepository(Tallas::class)->find($data['talla']);
             if (!$talla) {
-                throw new \InvalidArgumentException("No se encontró la talla con ID: {$data['id_talla']}");
+                throw new \InvalidArgumentException("No se encontró la talla con ID: {$data['talla']}");
             }
             $producto->setTalla($talla);
         }
 
         if (isset($data['color'])) {
-            $color = $this->getEntityManager()->getRepository(Colores::class)->find($data['id_color']);
+            $color = $this->getEntityManager()->getRepository(Colores::class)->find($data['color']);
             if (!$color) {
-                throw new \InvalidArgumentException("No se encontró el color con ID: {$data['id_color']}");
+                throw new \InvalidArgumentException("No se encontró el color con ID: {$data['color']}");
             }
             $producto->setColor($color);
         }
@@ -100,17 +105,22 @@ class ProductosRepository extends ServiceEntityRepository
 
         return $producto;
     }
+    // src/Repository/ProductosRepository.php
+
     public function eliminarProducto(int $id): void
     {
+        $entityManager = $this->getEntityManager();
         $producto = $this->find($id);
 
         if (!$producto) {
-            throw new \InvalidArgumentException("No se encontró el producto con ID: {$id}");
+            throw new NotFoundHttpException("Producto no encontrado.");
         }
 
-        $this->getEntityManager()->remove($producto);
-        $this->getEntityManager()->flush();
+        $entityManager->remove($producto);
+        $entityManager->flush();
     }
+
+
     /**
      * Encuentra un producto por su ID
      *
@@ -227,6 +237,65 @@ class ProductosRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleResult();
     }
+
+
+    public function findByTalla(int $idTalla)
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.talla = :talla')
+            ->setParameter('talla', $idTalla)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findByColor(int $idColor)
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.color = :color')
+            ->setParameter('color', $idColor)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function searchAndFilter(?string $nombre, ?string $tipo, ?string $sexo, ?int $idTalla, ?int $idColor)
+
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.talla', 't')
+            ->leftJoin('p.color', 'c');
+
+        if ($nombre) {
+            $qb->andWhere('p.nombre LIKE :nombre')
+                ->setParameter('nombre',    '%' . $nombre . '%');
+        }
+
+        if ($tipo) {
+            $qb->andWhere('p.tipo = :tipo')
+                ->setParameter('tipo', $tipo);
+        }
+
+        if ($sexo) {
+            $qb->andWhere('p.sexo = :sexo')
+                ->setParameter('sexo', $sexo);
+        }
+
+        if ($idTalla) {
+            $qb->andWhere('t.id = :idTalla')
+                ->setParameter('idTalla', $idTalla);
+        }
+
+        if ($idColor) {
+            $qb->andWhere('c.id = :idColor')
+                ->setParameter('idColor', $idColor);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+
+
+
+
 
 
 //    /**

@@ -2,9 +2,9 @@
 
 namespace App\Enum;
 
-enum Estado:string
-{
-    case ENTREGADO = 'Entregado';
-    case CANCELADO = 'Cancelado';
-    case EN_CURSO = 'En curso';
+enum Estado: string {
+    case ENTREGADO = 'entregado';
+    case CANCELADO = 'cancelado';
+    case EN_CURSO = 'en_curso';
+    case ENVIADO = 'enviado';
 }

@@ -10,8 +10,10 @@ use App\Servicios\ProductosService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Enum\Sexo;
+
 
 
 #[Route('/productos')]
@@ -107,19 +109,24 @@ class ProductoController extends AbstractController
     {
         $productos = $this->productosService->getAllProductos();
 
-        // Convertir la cadena JSON de imagen en un array real
-        $productosArray = array_map(function ($producto) {
+        // Ensure $productos is an array of Productos objects
+        $productosArray = array_map(function (Productos $producto) {
             return [
                 'id' => $producto->getId(),
                 'nombre' => $producto->getNombre(),
                 'descripcion' => $producto->getDescripcion(),
                 'tipo' => $producto->getTipo(),
                 'precio' => $producto->getPrecio(),
-                'imagen' => json_decode($producto->getImagen(), true), // 🔥 CONVIERTE EL STRING A ARRAY 🔥
+                'imagenes' => json_decode($producto->getImagen(), true), // 🔥 CONVIERTE EL STRING A ARRAY 🔥
                 'sexo' => $producto->getSexo(),
-                'talla' => $producto->getTalla() ? $producto->getTalla()->getId() : null,
-                'color' => $producto->getColor() ? $producto->getColor()->getId() : null,
-            ];
+                'talla' => $producto->getTalla() ? [
+                    'id' => $producto->getTalla()->getId(),
+                    'descripcion' => $producto->getTalla()->getDescripcion()
+                ] : null,
+                'color' => $producto->getColor() ? [
+                    'id' => $producto->getColor()->getId(),
+                    'descripcion' => $producto->getColor()->getDescripcion()
+                ] : null,            ];
         }, $productos);
 
         return new JsonResponse($productosArray);
@@ -171,13 +178,16 @@ class ProductoController extends AbstractController
             return new JsonResponse(['error' => 'Sexo no válido'], JsonResponse::HTTP_BAD_REQUEST);
         }
 
+        // Convertir la cadena de URLs de imagen en un array
+        $imagenesArray = explode(',', $imagen);
+
         // Crear el producto
         $producto = new Productos();
         $producto->setNombre($nombre);
         $producto->setDescripcion($descripcion);
         $producto->setTipo($tipo);
         $producto->setPrecio((float)$precio);
-        $producto->setImagen($imagen); // Validación aplicada
+        $producto->setImagen($imagenesArray); // Pasar el array de imágenes
         $producto->setSexo($sexo);
         $producto->setTalla($talla);
         $producto->setColor($color);
@@ -186,44 +196,54 @@ class ProductoController extends AbstractController
 
         return new JsonResponse(['message' => 'Producto creado exitosamente'], JsonResponse::HTTP_CREATED);
     }
-    #[Route('/editar/{id}', name: 'productos_edit', methods: ['PUT'])]
+    #[Route('/editar/{id}', name: 'productos_edit', methods: ['PUT'],requirements: ['id' => '\d+'])]
     public function edit(int $id, Request $request): JsonResponse
     {
-        // Obtener los datos del cuerpo de la solicitud
-        $data = json_decode($request->getContent(), true); // El segundo parámetro 'true' convierte el JSON a un array
+        $data = json_decode($request->getContent(), true);
 
         try {
-            // Llamar al servicio para editar el producto
-            $producto = $this->productosService->findProductoById($id, $data);
+            // Verificar que el campo imagen sea un array
+            if (isset($data['imagen']) && !is_array($data['imagen'])) {
+                return new JsonResponse(['error' => 'El campo imagen debe ser un array'], JsonResponse::HTTP_BAD_REQUEST);
+            }
 
-            // Retornar la respuesta en formato JSON
+            $producto = $this->productosService->actualizarProducto($id, $data);
+
             return new JsonResponse([
                 'id' => $producto->getId(),
                 'nombre' => $producto->getNombre(),
                 'descripcion' => $producto->getDescripcion(),
-                'tipo' => $producto->getTipo(),
+                'tipo' => $producto->getTipo()->value,
                 'precio' => $producto->getPrecio(),
-                'imagen' => $producto->getImagen(),
-                'sexo' => $producto->getSexo(),
+                'imagen' => json_decode($producto->getImagen(), true), // Decodificar el JSON de imágenes
+                'sexo' => $producto->getSexo()->value,
                 'talla' => $producto->getTalla() ? $producto->getTalla()->getId() : null,
                 'color' => $producto->getColor() ? $producto->getColor()->getId() : null,
-            ], JsonResponse::HTTP_OK);
+            ], Response::HTTP_OK);
 
         } catch (\Exception $e) {
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
+
     #[Route('/eliminar/{id}', name: 'eliminar_producto', methods: ['DELETE'])]
     public function eliminar(int $id): JsonResponse
     {
         try {
+            // Intentar eliminar el producto usando el servicio
             $this->productosService->eliminarProducto($id);
 
+            // Si todo sale bien, devolver un mensaje de éxito
             return new JsonResponse(['mensaje' => 'Producto eliminado con éxito.'], JsonResponse::HTTP_OK);
+        } catch (\NotFoundHttpException $e) {
+            // Si no se encuentra el producto, devolver error 404
+            return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
+            // Si ocurre cualquier otro error, devolver error 400
             return new JsonResponse(['error' => $e->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
+
     #[Route('/find/{id}', name: 'producto_por_id', methods: ['GET'])]
     public function productoPorId(int $id): JsonResponse
     {
@@ -346,5 +366,12 @@ class ProductoController extends AbstractController
 
 
 
+    #[Route('/sexos', name: 'sexos_all', methods: ['GET'])]
+    public function getSexos(): JsonResponse
+    {
+        // Obtener los valores del enum Sexo
+        $sexos = array_map(fn($sexo) => $sexo->value, Sexo::cases());
 
+        return new JsonResponse($sexos, JsonResponse::HTTP_OK);
+    }
 }

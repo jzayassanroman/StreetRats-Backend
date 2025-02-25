@@ -26,10 +26,6 @@ class Pedido
     private ?\DateTimeInterface $fecha = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name:'id_producto',nullable: false)]
-    private ?Productos $id_producto = null;
-
-    #[ORM\ManyToOne]
     #[ORM\JoinColumn(name:'id_cliente',nullable: false)]
     private ?Cliente $id_cliente = null;
 
@@ -74,17 +70,7 @@ class Pedido
         return $this;
     }
 
-    public function getIdProducto(): ?Productos
-    {
-        return $this->id_producto;
-    }
 
-    public function setIdProducto(?Productos $id_producto): static
-    {
-        $this->id_producto = $id_producto;
-
-        return $this;
-    }
 
     public function getIdCliente(): ?Cliente
     {
