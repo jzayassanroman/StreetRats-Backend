@@ -78,7 +78,7 @@ class PedidoController extends AbstractController
             $estadoMapeado = match ($estado) {
                 'entregado' => Estado::ENTREGADO->value,  // Pasamos el valor como string
                 'cancelado' => Estado::CANCELADO->value,  // Pasamos el valor como string
-                'en curso' => Estado::EN_CURSO->value,  // Pasamos el valor como string
+                'en_curso' => Estado::EN_CURSO->value,  // Pasamos el valor como string
                 default => throw new \InvalidArgumentException("Estado no válido: $estado")
             };
 
