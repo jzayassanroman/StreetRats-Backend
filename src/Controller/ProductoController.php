@@ -56,6 +56,36 @@ class ProductoController extends AbstractController
         );
 
     }
+
+    #[Route('/filtrosshop', name: 'filtrar_shop_productos', methods: ['GET'])]
+    public function filtros(Request $request, ProductosRepository $productoRepository): JsonResponse
+    {
+        $nombre = $request->query->get('nombre');
+        $tipo = $request->query->get('tipo');
+        $sexo = $request->query->get('sexo');
+        $talla = $request->query->get('talla');
+        $color = $request->query->get('color');
+        $precioMin = $request->query->get('precioMin');
+        $precioMax = $request->query->get('precioMax');
+
+        $productos = $productoRepository->searchAndFilter($nombre, $tipo, $sexo, $talla, $color, $precioMin, $precioMax);
+
+        return $this->json(
+            array_map(function ($producto) {
+                return [
+                    'id' => $producto->getId(),
+                    'nombre' => $producto->getNombre(),
+                    'tipo' => $producto->getTipo(),
+                    'sexo' => $producto->getSexo(),
+                    'precio' => $producto->getPrecio(),
+                    'imagenes' => json_decode($producto->getImagen(), true), // 🔥 CONVIERTE EL STRING A ARRAY 🔥
+                    'talla' => $producto->getTalla() ? $producto->getTalla()->getDescripcion() : null,
+                    'color' => $producto->getColor() ? $producto->getColor()->getDescripcion() : null,
+                ];
+            }, $productos)
+        );
+
+    }
 //    #[Route('/filtros', name: 'filtrar_productos', methods: ['GET'])]
 //    public function filtros(Request $request, ProductosRepository $productoRepository): JsonResponse
 //    {
