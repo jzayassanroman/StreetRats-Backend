@@ -192,7 +192,71 @@ class ProductosRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getResult();
     }
+    public function findByCategoria(Tipo $tipo): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.tipo = :tipo')
+            ->setParameter('tipo', $tipo->value) // Usa el valor del enum, no el objeto
+            ->getQuery()
+            ->getResult();
+    }
+    public function searchByName(string $query)
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.nombre LIKE :query')
+            ->setParameter('query', '%' . $query . '%')
+            ->getQuery()
+            ->getResult();
+    }
+    public function getMinMaxPrecios(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->select('MIN(p.precio) as precioMin, MAX(p.precio) as precioMax')
+            ->getQuery()
+            ->getSingleResult();
+    }
+    public function searchAndFilter2(?string $nombre, ?string $tipo, ?string $sexo, ?int $idTalla, ?int $idColor, ?float $precioMin, ?float $precioMax)
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.talla', 't')
+            ->leftJoin('p.color', 'c');
 
+        if ($nombre) {
+            $qb->andWhere('p.nombre LIKE :nombre')
+                ->setParameter('nombre', '%' . $nombre . '%');
+        }
+
+        if ($tipo) {
+            $qb->andWhere('p.tipo = :tipo')
+                ->setParameter('tipo', $tipo);
+        }
+
+        if ($sexo) {
+            $qb->andWhere('p.sexo = :sexo')
+                ->setParameter('sexo', $sexo);
+        }
+
+        if ($idTalla) {
+            $qb->andWhere('t.id = :idTalla')
+                ->setParameter('idTalla', $idTalla);
+        }
+
+        if ($idColor) {
+            $qb->andWhere('c.id = :idColor')
+                ->setParameter('idColor', $idColor);
+        }
+        if ($precioMin !== null) {
+            $qb->andWhere('p.precio >= :precioMin')
+                ->setParameter('precioMin', $precioMin);
+        }
+
+        if ($precioMax !== null) {
+            $qb->andWhere('p.precio <= :precioMax')
+                ->setParameter('precioMax', $precioMax);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 
 
 

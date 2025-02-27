@@ -36,12 +36,13 @@ class PedidoService
         // Crear el nuevo pedido
         $pedido = new Pedido();
         $pedido->setTotal($total);
-        $pedido->setEstado(Estado::from($estado));  // Convertir el estado a un enum
+        $pedido->setEstado(Estado::from($estado));
         $pedido->setFecha($fecha);
         $pedido->setIdCliente($cliente);
 
         // Guardar el pedido en la base de datos
         $this->entityManager->persist($pedido);
+        $this->entityManager->flush(); // Asegúrate de guardar el pedido antes de agregar productos
 
         // Insertar los productos en la tabla detalle_venta
         foreach ($productosData as $productoData) {
@@ -70,7 +71,6 @@ class PedidoService
 
         return $pedido;
     }
-
     public function editarPedido(int $id, array $data): Pedido
     {
         $pedido = $this->pedidoRepository->find($id);
