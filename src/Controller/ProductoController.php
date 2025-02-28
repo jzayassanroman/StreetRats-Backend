@@ -234,7 +234,7 @@ class ProductoController extends AbstractController
 
     }
 
-    #[Route('/buscador', name: 'buscar_productos', methods: ['GET'])]
+    #[Route('/buscador', name: 'buscar_productos1', methods: ['GET'])]
     public function buscador(Request $request, ProductosRepository $productoRepository): JsonResponse
     {
         $query = $request->query->get('nombre', '');
