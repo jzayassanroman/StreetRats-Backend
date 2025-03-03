@@ -36,7 +36,7 @@ USER root
 RUN composer clear-cache
 
 # Instalar dependencias de Symfony con más detalles en caso de error
-RUN composer install --no-interaction --verbose
+RUN composer install --no-scripts --no-interaction --verbose
 
 # Volver a usuario no-root
 USER symfonyuser
