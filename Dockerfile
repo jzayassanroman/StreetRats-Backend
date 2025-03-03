@@ -40,8 +40,15 @@ RUN composer install --no-interaction --optimize-autoloader --no-scripts
 # Configurar Symfony para desarrollo
 ENV APP_ENV=dev
 
-# Exponer el puerto 8000 para el servidor embebido de Symfony
+# Exponer el puerto 8000
 EXPOSE 8000
 
-# Comando de inicio: mantener el servidor corriendo en segundo plano
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+# Mantener el servidor corriendo en segundo plano con supervisord
+COPY supervisord.conf /etc/supervisord.conf
+
+# Instalar supervisord
+USER root
+RUN apt-get install -y supervisor
+
+# Ejecutar supervisord para mantener PHP corriendo
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]
