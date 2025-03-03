@@ -1,7 +1,7 @@
-# Usa la imagen oficial de PHP 8.3 CLI
+# Usa la imagen oficial de PHP 8.3
 FROM php:8.3-cli
 
-# Instalar dependencias del sistema y extensiones de PHP
+# Instalar dependencias del sistema y extensiones de PHP necesarias
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -17,38 +17,31 @@ RUN apt-get update && apt-get install -y \
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Configurar directorio de trabajo
+# Crear directorio de trabajo
 WORKDIR /var/www/symfony
 
-# Copiar archivos del proyecto
+# Copiar los archivos del proyecto
 COPY . .
 
-# Crear los directorios necesarios antes de asignar permisos
-RUN mkdir -p var/cache var/log var/sessions vendor \
-    && chmod -R 775 var vendor
+# Ajustar permisos
+RUN chown -R www-data:www-data /var/www/symfony \
+    && chmod -R 775 /var/www/symfony/var \
+    && chmod -R 775 /var/www/symfony/vendor
 
-# Crear un usuario para ejecutar Symfony
-RUN useradd -m symfonyuser \
-    && chown -R symfonyuser:symfonyuser /var/www/symfony
+# Cambiar a usuario no-root para mayor seguridad
+USER www-data
 
-# Cambiar al usuario creado
-USER symfonyuser
+# Instalar dependencias de Symfony
+RUN composer install --no-interaction --optimize-autoloader
 
-# Instalar dependencias de Symfony sin ejecutar scripts
-RUN composer install --no-interaction --optimize-autoloader --no-scripts
+# Generar claves JWT para autenticación
+RUN mkdir -p config/jwt && \
+    openssl genpkey -algorithm RSA -out config/jwt/private.pem -pkeyopt rsa_keygen_bits:4096 && \
+    openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem && \
+    chmod 600 config/jwt/private.pem && chmod 644 config/jwt/public.pem
 
-# Configurar Symfony para desarrollo
-ENV APP_ENV=dev
-
-# Exponer el puerto 8000
+# Exponer el puerto 8000 para el servidor Symfony
 EXPOSE 8000
 
-# Mantener el servidor corriendo en segundo plano con supervisord
-COPY supervisord.conf /etc/supervisord.conf
-
-# Instalar supervisord
-USER root
-RUN apt-get install -y supervisor
-
-# Ejecutar supervisord para mantener PHP corriendo
-CMD ["supervisord", "-c", "/etc/supervisord.conf"]
+# Comando de inicio: arranca Symfony en modo desarrollo
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
