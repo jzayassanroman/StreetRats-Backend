@@ -12,46 +12,40 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libonig-dev \
     libssl-dev \
-    && docker-php-ext-install intl pdo pdo_pgsql pgsql zip opcache bcmath sockets
+    && docker-php-ext-install intl pdo pdo_pgsql pgsql zip opcache
 
-# Instalar Composer manualmente para evitar problemas con la versión
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Instalar Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Configurar Apache para servir Symfony desde el directorio `public`
+RUN sed -i 's!/var/www/html!/var/www/symfony/public!g' /etc/apache2/sites-available/000-default.conf \
+    && a2enmod rewrite
 
 # Crear directorio de trabajo
 WORKDIR /var/www/symfony
 
-# Crear un usuario no root para ejecutar Composer
-RUN useradd -m symfonyuser
-
 # Copiar los archivos del proyecto
 COPY . .
 
-# Establecer los permisos correctos para los archivos
-RUN chown -R symfonyuser:symfonyuser /var/www/symfony
+# Ajustar permisos correctamente para Apache (www-data)
+RUN chown -R www-data:www-data /var/www/symfony \
+    && chmod -R 775 /var/www/symfony/var \
+    && chmod -R 775 /var/www/symfony/vendor
 
-# Cambiar a usuario root temporalmente para instalar dependencias
-USER root
+# Cambiar a usuario no-root para mayor seguridad
+USER www-data
 
-# Limpiar caché de Composer
-RUN composer clear-cache
-
-# Instalar dependencias de Symfony con más detalles en caso de error
-RUN composer install --no-scripts --no-interaction --verbose
-
-# Volver a usuario no-root
-USER symfonyuser
+# Instalar dependencias de Symfony con permisos correctos
+RUN composer install --no-interaction --optimize-autoloader --no-scripts
 
 # Crear el directorio var/ manualmente si no existe
-RUN mkdir -p var && chmod -R 777 var/
+RUN mkdir -p var/cache var/logs var/sessions && chmod -R 777 var/
 
 # Configurar Symfony para desarrollo
 ENV APP_ENV=dev
 
-# Configurar Volumes para cambios en caliente
-VOLUME ["/var/www/symfony"]
-
-# Exponer el puerto (usando el servidor embebido de PHP)
+# Exponer el puerto 80 para Apache
 EXPOSE 8000
 
-# Ejecutar la instalación y levantar el servidor
-CMD composer install && php -S 0.0.0.0:8000 -t public
+# Comando de inicio que instala dependencias y arranca Apache
+CMD ["sh", "-c", "composer install --no-interaction && apache2-foreground"]
