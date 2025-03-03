@@ -1,5 +1,5 @@
 # Usa la imagen oficial de PHP con Apache
-FROM php:8.3-apache
+FROM php:8.3
 
 # Instalar dependencias del sistema y extensiones de PHP
 RUN apt-get update && apt-get install -y \
@@ -12,39 +12,46 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libonig-dev \
     libssl-dev \
-    && docker-php-ext-install intl pdo pdo_pgsql pgsql zip opcache
+    && docker-php-ext-install intl pdo pdo_pgsql pgsql zip opcache bcmath sockets
 
-# Instalar Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Configurar Apache para que el DocumentRoot sea el directorio público de Symfony
-RUN sed -i 's!/var/www/html!/var/www/symfony/public!g' /etc/apache2/sites-available/000-default.conf \
-    && a2enmod rewrite
+# Instalar Composer manualmente para evitar problemas con la versión
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Crear directorio de trabajo
 WORKDIR /var/www/symfony
 
+# Crear un usuario no root para ejecutar Composer
+RUN useradd -m symfonyuser
+
 # Copiar los archivos del proyecto
 COPY . .
 
-# Asegurar que los permisos sean correctos para Apache y Symfony
-RUN chown -R www-data:www-data /var/www/symfony \
-    && chmod -R 775 /var/www/symfony/var
+# Establecer los permisos correctos para los archivos
+RUN chown -R symfonyuser:symfonyuser /var/www/symfony
 
-# Cambiar a usuario no-root para mayor seguridad
-USER www-data
+# Cambiar a usuario root temporalmente para instalar dependencias
+USER root
 
-# Instalar dependencias de Symfony sin ejecutar scripts para evitar problemas
-RUN composer install --no-scripts --no-autoloader --no-interaction --optimize-autoloader
+# Limpiar caché de Composer
+RUN composer clear-cache
+
+# Instalar dependencias de Symfony con más detalles en caso de error
+RUN composer install --no-scripts --no-interaction --verbose
+
+# Volver a usuario no-root
+USER symfonyuser
 
 # Crear el directorio var/ manualmente si no existe
-RUN mkdir -p var/cache var/logs var/sessions && chmod -R 777 var/
+RUN mkdir -p var && chmod -R 777 var/
 
 # Configurar Symfony para desarrollo
 ENV APP_ENV=dev
 
-# Exponer el puerto 80 para Apache
+# Configurar Volumes para cambios en caliente
+VOLUME ["/var/www/symfony"]
+
+# Exponer el puerto (usando el servidor embebido de PHP)
 EXPOSE 8000
 
-# Comando de inicio que instala dependencias y arranca Apache
-CMD ["sh", "-c", "composer install --no-interaction && apache2-foreground"]
+# Ejecutar la instalación y levantar el servidor
+CMD composer install && php -S 0.0.0.0:8000 -t public
