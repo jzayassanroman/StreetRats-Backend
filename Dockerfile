@@ -1,4 +1,4 @@
-# Usa la imagen oficial de PHP 8.3
+# Usa la imagen oficial de PHP 8.3 CLI
 FROM php:8.3-cli
 
 # Instalar dependencias del sistema y extensiones de PHP
@@ -23,24 +23,19 @@ WORKDIR /var/www/symfony
 # Copiar archivos del proyecto
 COPY . .
 
-# Ajustar permisos correctamente
-RUN chmod -R 775 /var/www/symfony/var \
-    && chmod -R 775 /var/www/symfony/vendor
+# Crear los directorios necesarios antes de asignar permisos
+RUN mkdir -p var/cache var/log var/sessions vendor \
+    && chmod -R 775 var vendor
 
-# Crear un usuario para ejecutar el servidor
-RUN useradd -m symfonyuser
-
-# Asignar permisos al usuario creado
-RUN chown -R symfonyuser:symfonyuser /var/www/symfony
+# Crear un usuario para ejecutar Symfony
+RUN useradd -m symfonyuser \
+    && chown -R symfonyuser:symfonyuser /var/www/symfony
 
 # Cambiar al usuario creado
 USER symfonyuser
 
 # Instalar dependencias de Symfony sin ejecutar scripts
 RUN composer install --no-interaction --optimize-autoloader --no-scripts
-
-# Asegurar que los directorios existen y tienen permisos correctos
-RUN mkdir -p var/cache var/log var/sessions && chmod -R 777 var/
 
 # Configurar Symfony para desarrollo
 ENV APP_ENV=dev
