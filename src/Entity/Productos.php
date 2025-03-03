@@ -35,12 +35,12 @@ class Productos
     private ?Sexo $sexo = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name:'id_talla',nullable: false)]
-    private ?Tallas $id_talla = null;
+    #[ORM\JoinColumn(name:'id_talla',nullable: false,)]
+    private ?Tallas $talla = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name:'id_color',nullable: false)]
-    private ?Colores $id_color = null;
+    private ?Colores $color = null;
 
     public function getId(): ?int
     {
@@ -100,10 +100,9 @@ class Productos
         return $this->imagen;
     }
 
-    public function setImagen(string $imagen): static  // Cambia 'setImg' a 'setImagen'
+    public function setImagen(array $imagen): static  // Cambia 'setImg' a 'setImagen'
     {
-        $this->imagen = $imagen;
-
+        $this->imagen = json_encode($imagen);
         return $this;
     }
 
@@ -119,26 +118,26 @@ class Productos
         return $this;
     }
 
-    public function getIdTalla(): ?tallas
+    public function getTalla(): ?Tallas
     {
-        return $this->id_talla;
+        return $this->talla;
     }
 
-    public function setIdTalla(?tallas $id_talla): static
+    public function setTalla(?Tallas $talla): static
     {
-        $this->id_talla = $id_talla;
+        $this->talla = $talla;
 
         return $this;
     }
 
-    public function getIdColor(): ?colores
+    public function getColor(): ?Colores
     {
-        return $this->id_color;
+        return $this->color;
     }
 
-    public function setIdColor(?colores $id_color): static
+    public function setColor(?Colores $color): static
     {
-        $this->id_color = $id_color;
+        $this->color = $color;
 
         return $this;
     }

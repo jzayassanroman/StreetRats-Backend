@@ -9,12 +9,12 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: 'usuario',schema: 'streetrats')]
+#[ORM\Table(name: 'usuario', schema: 'streetrats')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column (name: 'id')]
+    #[ORM\Column(name: 'id')]
     private ?int $id = null;
 
     #[ORM\Column(name: 'username', length: 255)]
@@ -25,6 +25,26 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(name: 'rol', enumType: Rol::class)]
     private ?Rol $rol = null;
+
+    #[ORM\Column(name: 'isverified', type: 'boolean', nullable: true)]
+    private ?bool $isVerified = false;
+
+    #[ORM\Column(name: 'verificationtoken', type: 'string', length: 255, nullable: true)]
+    private ?string $verificationToken = null;
+
+    #[ORM\OneToOne(mappedBy: "id_user", targetEntity: Cliente::class)]
+    private ?Cliente $cliente = null;
+
+    public function getCliente(): ?Cliente
+    {
+        return $this->cliente;
+    }
+
+    public function __construct()
+    {
+        $this->verificationToken = bin2hex(random_bytes(16));
+        $this->rol = Rol::USER;// Genera un token aleatorio
+    }
 
     public function getId(): ?int
     {
@@ -55,21 +75,26 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getRol(): array
-    {
-        return  $this->rol;
-    }
 
-    public function setRol(Rol $rol): static
+    public function setRol(Rol $rol): self
     {
         $this->rol = $rol;
-
         return $this;
     }
 
+    // Método para obtener el rol
     public function getRoles(): array
     {
-        return [$this->rol->value];
+        return $this->rol ? [$this->rol->value] : ['User']; // ✅ Corrige la asignación de roles
+    }
+
+
+
+
+    // Método para verificar si el usuario es Admin
+    public function isAdmin(): bool
+    {
+        return in_array(Rol::ADMIN->value, $this->getRoles());
     }
 
     public function eraseCredentials(): void
@@ -79,6 +104,41 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getUserIdentifier(): string
     {
-        return $this->username;
+        return (string) $this->id; // Asegura que se incluya el ID en el token
     }
+
+
+    public function isVerified(): ?bool
+    {
+        return $this->isVerified;
+    }
+
+    public function setVerified(?bool $verified): self
+    {
+        $this->isVerified = $verified;
+
+        return $this;
+    }
+
+    public function getVerificationToken(): ?string
+    {
+        return $this->verificationToken;
+    }
+
+    public function setVerificationToken(?string $verificationToken): self
+    {
+        $this->verificationToken = $verificationToken;
+        return $this;
+    }
+
+    public function getJWTCustomClaims(): array
+    {
+        return [
+            'id' => $this->getId(),
+            'email' => $this->getEmail(),
+            'isVerified' => $this->isVerified()
+        ];
+    }
+
+
 }

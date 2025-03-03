@@ -2,8 +2,13 @@
 
 namespace App\Servicios;
 use App\Entity\Cliente;
+use App\Entity\Colores;
+use App\Entity\DetalleVenta;
+use App\Entity\Inventario;
 use App\Entity\Pedido;
+use App\Entity\PedidoProducto;
 use App\Entity\Productos;
+use App\Entity\Tallas;
 use App\Enum\Estado;
 use App\Repository\PedidoRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,26 +25,48 @@ class PedidoService
         $this->pedidoRepository = $pedidoRepository;
     }
 
-    public function crearPedido(int $productoId, int $clienteId, float $total, string $estado, \DateTimeInterface $fecha): Pedido
+    public function crearPedido(int $clienteId, float $total, string $estado, \DateTimeInterface $fecha, array $productosData): Pedido
     {
-        // Buscar el producto y el cliente desde la base de datos
-        $producto = $this->entityManager->getRepository(Productos::class)->find($productoId);
+        // Buscar el cliente desde la base de datos
         $cliente = $this->entityManager->getRepository(Cliente::class)->find($clienteId);
-
-        if (!$producto || !$cliente) {
-            throw new \InvalidArgumentException("Producto o cliente no encontrados.");
+        if (!$cliente) {
+            throw new \InvalidArgumentException("Cliente no encontrado.");
         }
 
         // Crear el nuevo pedido
         $pedido = new Pedido();
         $pedido->setTotal($total);
-        $pedido->setEstado(Estado::from($estado));  // Convertir el estado a un enum
+        $pedido->setEstado(Estado::from($estado));
         $pedido->setFecha($fecha);
-        $pedido->setIdProducto($producto);
         $pedido->setIdCliente($cliente);
 
         // Guardar el pedido en la base de datos
         $this->entityManager->persist($pedido);
+        $this->entityManager->flush(); // Asegúrate de guardar el pedido antes de agregar productos
+
+        // Insertar los productos en la tabla detalle_venta
+        foreach ($productosData as $productoData) {
+            if (!isset($productoData['id_producto'])) {
+                throw new \InvalidArgumentException("El id_producto es requerido.");
+            }
+
+            $producto = $this->entityManager->getRepository(Productos::class)->find($productoData['id_producto']);
+
+            if (!$producto) {
+                throw new \InvalidArgumentException("Producto no encontrado.");
+            }
+
+            // Crear el registro en la tabla detalle_venta
+            $detalleVenta = new DetalleVenta();
+            $detalleVenta->setPedido($pedido);
+            $detalleVenta->setProducto($producto);
+            $detalleVenta->setCantidad($productoData['cantidad']);
+            $detalleVenta->setSubtotal($productoData['subtotal']);
+
+            $this->entityManager->persist($detalleVenta);
+        }
+
+        // Guardar todo
         $this->entityManager->flush();
 
         return $pedido;

@@ -25,7 +25,7 @@ class Valoraciones
     private ?\DateTimeInterface $fecha = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name:'id_producto',nullable: false)]
+    #[ORM\JoinColumn(name:'id_producto',nullable: false,onDelete: 'CASCADE')]
     private ?Productos $id_producto = null;
 
     #[ORM\ManyToOne]
