@@ -1,5 +1,5 @@
-# Usa la imagen oficial de PHP con Apache
-FROM php:8.3
+# Usa la imagen oficial de PHP 8.3
+FROM php:8.3-cli
 
 # Instalar dependencias del sistema y extensiones de PHP
 RUN apt-get update && apt-get install -y \
@@ -17,35 +17,36 @@ RUN apt-get update && apt-get install -y \
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Configurar Apache para servir Symfony desde el directorio `public`
-RUN sed -i 's!/var/www/html!/var/www/symfony/public!g' /etc/apache2/sites-available/000-default.conf \
-    && a2enmod rewrite
-
-# Crear directorio de trabajo
+# Configurar directorio de trabajo
 WORKDIR /var/www/symfony
 
-# Copiar los archivos del proyecto
+# Copiar archivos del proyecto
 COPY . .
 
-# Ajustar permisos correctamente para Apache (www-data)
-RUN chown -R www-data:www-data /var/www/symfony \
-    && chmod -R 775 /var/www/symfony/var \
+# Ajustar permisos correctamente
+RUN chmod -R 775 /var/www/symfony/var \
     && chmod -R 775 /var/www/symfony/vendor
 
-# Cambiar a usuario no-root para mayor seguridad
-USER www-data
+# Crear un usuario para ejecutar el servidor
+RUN useradd -m symfonyuser
 
-# Instalar dependencias de Symfony con permisos correctos
+# Asignar permisos al usuario creado
+RUN chown -R symfonyuser:symfonyuser /var/www/symfony
+
+# Cambiar al usuario creado
+USER symfonyuser
+
+# Instalar dependencias de Symfony sin ejecutar scripts
 RUN composer install --no-interaction --optimize-autoloader --no-scripts
 
-# Crear el directorio var/ manualmente si no existe
-RUN mkdir -p var/cache var/logs var/sessions && chmod -R 777 var/
+# Asegurar que los directorios existen y tienen permisos correctos
+RUN mkdir -p var/cache var/log var/sessions && chmod -R 777 var/
 
 # Configurar Symfony para desarrollo
 ENV APP_ENV=dev
 
-# Exponer el puerto 80 para Apache
+# Exponer el puerto 8000 para el servidor embebido de Symfony
 EXPOSE 8000
 
-# Comando de inicio que instala dependencias y arranca Apache
-CMD ["sh", "-c", "composer install --no-interaction && apache2-foreground"]
+# Comando de inicio: mantener el servidor corriendo en segundo plano
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
