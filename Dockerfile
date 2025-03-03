@@ -28,7 +28,8 @@ COPY . .
 RUN mkdir -p var/cache var/logs var/sessions config/jwt /var/log/supervisor && \
     chown -R www-data:www-data /var/www/symfony && \
     chmod -R 775 /var/www/symfony/var && \
-    chmod -R 775 /var/www/symfony/vendor
+    [ -d /var/www/symfony/vendor ] && chmod -R 775 /var/www/symfony/vendor || echo "El directorio vendor no existe"
+
 
 # Copiar configuración de Supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
