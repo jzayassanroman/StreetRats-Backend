@@ -48,4 +48,4 @@ VOLUME ["/var/www/symfony"]
 EXPOSE 8000
 
 # Ejecutar la instalación y levantar el servidor
-CMD composer install && php -S 0.0.0.0:8000 -t public
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
