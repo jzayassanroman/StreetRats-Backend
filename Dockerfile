@@ -12,10 +12,10 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libonig-dev \
     libssl-dev \
-    && docker-php-ext-install intl pdo pdo_pgsql pgsql zip opcache bcmath sockets
+    && docker-php-ext-install intl pdo pdo_pgsql pgsql zip opcache
 
-# Instalar Composer manualmente para evitar problemas con la versión
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Instalar Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Crear directorio de trabajo
 WORKDIR /var/www/symfony
@@ -29,17 +29,11 @@ COPY . .
 # Establecer los permisos correctos para los archivos
 RUN chown -R symfonyuser:symfonyuser /var/www/symfony
 
-# Cambiar a usuario root temporalmente para instalar dependencias
-USER root
-
-# Limpiar caché de Composer
-RUN composer clear-cache
-
-# Instalar dependencias de Symfony con más detalles en caso de error
-RUN composer install --no-scripts --no-interaction --verbose
-
-# Volver a usuario no-root
+# Cambiar a usuario no-root
 USER symfonyuser
+
+# Instalar dependencias de Symfony sin ejecutar los scripts
+RUN composer install --no-scripts --no-autoloader
 
 # Crear el directorio var/ manualmente si no existe
 RUN mkdir -p var && chmod -R 777 var/
