@@ -1,4 +1,4 @@
-# Usa la imagen oficial de PHP 8.3
+# Usa la imagen oficial de PHP 8.3 (CLI)
 FROM php:8.3-cli
 
 # Instalar dependencias del sistema y extensiones de PHP necesarias
@@ -23,15 +23,16 @@ WORKDIR /var/www/symfony
 # Copiar los archivos del proyecto
 COPY . .
 
-# Ajustar permisos
-RUN chown -R www-data:www-data /var/www/symfony \
-    && chmod -R 775 /var/www/symfony/var \
-    && chmod -R 775 /var/www/symfony/vendor
+# Crear los directorios necesarios antes de cambiar permisos
+RUN mkdir -p var/cache var/logs var/sessions vendor && \
+    chown -R www-data:www-data /var/www/symfony && \
+    chmod -R 775 /var/www/symfony/var && \
+    chmod -R 775 /var/www/symfony/vendor
 
 # Cambiar a usuario no-root para mayor seguridad
 USER www-data
 
-# Instalar dependencias de Symfony
+# Instalar dependencias de Symfony con permisos correctos
 RUN composer install --no-interaction --optimize-autoloader
 
 # Generar claves JWT para autenticación
