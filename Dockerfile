@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libonig-dev \
     libssl-dev \
+    supervisor \
     && docker-php-ext-install intl pdo pdo_pgsql pgsql zip opcache
 
 # Instalar Composer
@@ -24,10 +25,13 @@ WORKDIR /var/www/symfony
 COPY . .
 
 # Crear los directorios necesarios antes de cambiar permisos
-RUN mkdir -p var/cache var/logs var/sessions vendor && \
+RUN mkdir -p var/cache var/logs var/sessions vendor /var/log/supervisor && \
     chown -R www-data:www-data /var/www/symfony && \
     chmod -R 775 /var/www/symfony/var && \
     chmod -R 775 /var/www/symfony/vendor
+
+# Copiar configuración de Supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Cambiar a usuario no-root para mayor seguridad
 USER www-data
@@ -44,5 +48,5 @@ RUN mkdir -p config/jwt && \
 # Exponer el puerto 8000 para el servidor Symfony
 EXPOSE 8000
 
-# Comando de inicio: arranca Symfony en modo desarrollo
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+# Comando de inicio: ejecutar Supervisor
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
