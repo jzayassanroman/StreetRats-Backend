@@ -36,7 +36,7 @@ USER symfonyuser
 RUN composer install --no-scripts --no-autoloader
 
 # Crear el directorio var/ manualmente si no existe
-RUN mkdir -p var && chmod -R 777 var/
+RUN mkdir -p var/cache var/logs var/sessions && chmod -R 777 var/
 
 # Configurar Symfony para desarrollo
 ENV APP_ENV=dev
@@ -48,4 +48,4 @@ VOLUME ["/var/www/symfony"]
 EXPOSE 8000
 
 # Ejecutar la instalación y levantar el servidor
-CMD ["symfony", "server:start", "--no-interaction"]
+CMD composer install && php -S 0.0.0.0:8000 -t public
