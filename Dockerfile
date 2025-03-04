@@ -27,7 +27,7 @@ RUN useradd -m symfonyuser
 COPY . .
 
 # Establecer los permisos correctos para los archivos
-RUN chown -RWXR symfonyuser:symfonyuser /var/www/symfony
+RUN chown -S symfonyuser:symfonyuser /var/www/symfony
 
 # Cambiar a usuario root temporalmente para instalar dependencias
 USER root
