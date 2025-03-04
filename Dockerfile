@@ -1,7 +1,7 @@
-# Usa la imagen oficial de PHP con Apache
-FROM php:8.3
+# Usa la imagen oficial de PHP 8.3 (CLI)
+FROM php:8.3-cli
 
-# Instalar dependencias del sistema y extensiones de PHP
+# Instalar dependencias del sistema y extensiones de PHP necesarias
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -12,46 +12,47 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libonig-dev \
     libssl-dev \
-    && docker-php-ext-install intl pdo pdo_pgsql pgsql zip opcache bcmath sockets
+    supervisor \
+    && docker-php-ext-install intl pdo pdo_pgsql pgsql zip opcache
 
-# Instalar Composer manualmente para evitar problemas con la versión
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Instalar Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Crear usuario y grupo 'symfonyuser' para mayor seguridad
+RUN useradd -m -d /home/symfonyuser -s /bin/bash symfonyuser
 
 # Crear directorio de trabajo
 WORKDIR /var/www/symfony
 
-# Crear un usuario no root para ejecutar Composer
-RUN useradd -m symfonyuser
-
 # Copiar los archivos del proyecto
 COPY . .
 
-# Establecer los permisos correctos para los archivos
-RUN chown 777 symfonyuser:symfonyuser /var/www/symfony
+# Crear los directorios necesarios antes de cambiar permisos
+RUN mkdir -p var/cache var/logs var/sessions config/jwt /var/log/supervisor /var/log/symfony && \
+    chown -R symfonyuser:symfonyuser /var/www/symfony && \
+    chmod -R 775 /var/www/symfony/var && \
+    chmod -R 775 /var/log/symfony && \
+    [ -d /var/www/symfony/vendor ] && chmod -R 775 /var/www/symfony/vendor || echo "El directorio vendor no existe"
 
-# Cambiar a usuario root temporalmente para instalar dependencias
-USER root
+# Copiar configuración de Supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Limpiar caché de Composer
-RUN composer clear-cache
-
-# Instalar dependencias de Symfony con más detalles en caso de error
-RUN composer install --no-scripts --no-interaction --verbose
-
-# Volver a usuario no-root
+# Cambiar a usuario symfonyuser para mayor seguridad
 USER symfonyuser
 
-# Crear el directorio var/ manualmente si no existe
-RUN mkdir -p var && chmod -R 777 var/
+# Instalar dependencias de Symfony con permisos correctos
+RUN composer install --no-interaction --optimize-autoloader
 
-# Configurar Symfony para desarrollo
-ENV APP_ENV=dev
+# Generar claves JWT para autenticación (si no existen)
+RUN if [ ! -f config/jwt/private.pem ]; then \
+    openssl genpkey -algorithm RSA -out config/jwt/private.pem -pkeyopt rsa_keygen_bits:4096 && \
+    openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem && \
+    chown -R symfonyuser:symfonyuser config/jwt && \
+    chmod 600 config/jwt/private.pem && chmod 644 config/jwt/public.pem; \
+    fi
 
-# Configurar Volumes para cambios en caliente
-VOLUME ["/var/www/symfony"]
-
-# Exponer el puerto (usando el servidor embebido de PHP)
+# Exponer el puerto 8000 para el servidor Symfony
 EXPOSE 8000
 
-# Ejecutar la instalación y levantar el servidor
-CMD composer install && php -S 0.0.0.0:8000 -t public
+# Comando de inicio: ejecutar Supervisor
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
