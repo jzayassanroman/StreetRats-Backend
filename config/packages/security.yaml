@@ -12,33 +12,22 @@ security:
                 property: username
     firewalls:
 
-        main:
-            lazy: true
-            provider: app_user_provider
+        api_login:
+            pattern: ^/api/login
+            stateless: true
+            anonymous: true
             json_login:
                 check_path: /api/login_check
-                #                username_path: email
-                #                password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
-#        api:
-#            pattern: ^/api/
-#            stateless: true
-#            jwt: ~
-            # activate different ways to authenticate
-            # https://symfony.com/doc/current/security.html#the-firewall
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
 
-            # activate different ways to authenticate
-            # https://symfony.com/doc/current/security.html#the-firewall
+        api:
+            pattern: ^/api/
+            stateless: true
+            provider: app_user_provider
+            jwt: ~
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
-
-    # Easy way to control access for large sections of your site
-    # Note: Only the *first* access control that matches will be used
     access_control:
         - { path: ^ /api/login, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: PUBLIC_ACCESS }
